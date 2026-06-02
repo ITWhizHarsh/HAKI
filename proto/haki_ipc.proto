@@ -1,0 +1,156 @@
+// haki_ipc.proto
+// HAKI — IPC contract for bidirectional streaming between the Swift shell (Body)
+// and the Python Core (Mind).
+//
+// Transport: gRPC over a UNIX domain socket
+//   Socket path: ~/Library/Application Support/HAKI/haki_core.sock
+//
+// Design: Process & Threading Model, Voice Pipeline
+// Requirements: 3.1 — first audio within 300 ms requires fine-grained streaming;
+//   all payloads (tokens, audio chunks) must be streamed incrementally,
+//   never batched as full responses.
+//
+// Regenerate stubs: see proto/README.md
+
+syntax = "proto3";
+
+package haki;
+
+option java_multiple_files = true;
+
+// ---------------------------------------------------------------------------
+// Primitive streaming units
+// ---------------------------------------------------------------------------
+
+// A 20 ms PCM audio frame captured by AVAudioEngine.
+// Samples are little-endian Int16 encoded as raw bytes.
+// Fine-grained (20 ms) so the VAD / barge-in loop never waits on IPC (Req 3.2, 3.3).
+message AudioFrame {
+  bytes  samples       = 1;  // raw PCM Int16 LE
+  uint64 timestamp_ms  = 2;  // monotonic wall-clock ms at capture
+  uint32 sequence_num  = 3;  // monotonically increasing, per-turn
+  uint32 sample_rate   = 4;  // Hz — typically 16000 for STT input
+  uint32 channels      = 5;  // 1 = mono
+}
+
+// Incremental STT output.  Partial transcripts arrive while the user is still
+// speaking; is_final=true marks the committed transcript for the turn.
+message PartialTranscript {
+  string text         = 1;
+  bool   is_final     = 2;
+  uint32 sequence_num = 3;
+}
+
+// Acoustic features extracted by the Swift VAD / audio analyser and forwarded
+// to the Core for Mood_Detector classification (Req 4.1).
+message AudioFeatures {
+  float  pitch_hz    = 1;  // fundamental frequency, Hz
+  float  energy_db   = 2;  // RMS energy, dBFS
+  uint32 duration_ms = 3;  // speech duration used for feature extraction
+}
+
+// A single LLM output token.  Sent as soon as the model produces it so
+// TTS sentence-chunking can begin immediately (Req 3.1).
+message LLMToken {
+  string text         = 1;
+  uint32 sequence_num = 2;
+  bool   is_last      = 3;  // true on the final token of the turn
+}
+
+// A fine-grained TTS audio chunk.  Chunked at clause/sentence boundaries
+// so playback begins within 300 ms of the first words becoming available
+// (Req 3.1).  Samples: little-endian Int16 LE.
+message TTSAudioChunk {
+  bytes  samples      = 1;  // raw PCM Int16 LE
+  uint32 sequence_num = 2;
+  bool   is_last      = 3;  // true on the final chunk of the turn
+  uint32 sample_rate  = 4;  // Hz — typically 22050 or 24000 for TTS output
+}
+
+// Control / lifecycle signals.  Used for barge-in, end-of-speech, cancel, and
+// heartbeat (keep-alive on the long-lived bidirectional stream).
+message ControlEvent {
+  enum Type {
+    UNKNOWN       = 0;
+    CANCEL        = 1;  // abort the current turn immediately
+    BARGE_IN      = 2;  // user started speaking mid-response (Req 3.3)
+    END_OF_SPEECH = 3;  // VAD detected 800 ms silence (Req 3.2)
+    HEARTBEAT     = 4;  // keep-alive ping on an idle stream
+  }
+  Type   event_type  = 1;
+  uint32 sequence_num = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Turn-level messages
+// ---------------------------------------------------------------------------
+
+// The complete input to a new conversational turn, sent after the final STT
+// transcript is available.
+message TurnRequest {
+  string        turn_id              = 1;  // UUID, scoped to this session
+  string        transcript           = 2;  // committed STT text
+  string        language_composition = 3;  // "hindi" | "english" | "hinglish" | "unknown"
+  AudioFeatures audio_features       = 4;  // for Mood_Detector
+}
+
+// A server-sent response fragment for a turn.
+// Carries one payload variant; the client assembles the sequence in order.
+message TurnResponse {
+  string turn_id = 1;
+
+  oneof payload {
+    LLMToken      llm_token     = 2;
+    TTSAudioChunk tts_chunk     = 3;
+    ControlEvent  control_event = 4;
+    string        error_message = 5;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Top-level stream message envelopes
+// ---------------------------------------------------------------------------
+
+// All messages the Swift shell (client) sends on the bidirectional stream.
+message ClientMessage {
+  oneof payload {
+    AudioFrame       audio_frame        = 1;
+    PartialTranscript partial_transcript = 2;
+    TurnRequest      turn_request       = 3;
+    ControlEvent     control_event      = 4;
+  }
+}
+
+// All messages the Python Core (server) sends on the bidirectional stream.
+message ServerMessage {
+  oneof payload {
+    PartialTranscript partial_transcript = 1;
+    LLMToken          llm_token          = 2;
+    TTSAudioChunk     tts_audio_chunk    = 3;
+    ControlEvent      control_event      = 4;
+    string            error              = 5;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Service definition
+// ---------------------------------------------------------------------------
+
+// HAKICore is the single gRPC service that hosts the voice pipeline.
+// One long-lived bidirectional stream per conversational session handles the
+// entire interaction: audio upload, incremental transcription, LLM token
+// streaming, TTS audio streaming, and out-of-band control events.
+//
+// Rationale for a single bidirectional RPC:
+//   • Avoids per-turn connection setup overhead that would blow the 300 ms
+//     first-audio budget (Req 3.1).
+//   • Allows the server to push partial transcripts and control events
+//     without waiting for a full TurnRequest.
+//   • Barge-in (CANCEL / BARGE_IN ControlEvent) can be sent at any point
+//     without racing a request/response boundary.
+service HAKICore {
+  // Main voice/command pipeline.
+  // The client streams ClientMessage frames; the server streams ServerMessage
+  // responses.  Both sides can send at any time — fully bidirectional.
+  rpc StreamTurn(stream ClientMessage) returns (stream ServerMessage);
+}

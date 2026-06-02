@@ -1,0 +1,93 @@
+# ─── macOS ───────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+
+# ─── Xcode / SwiftPM ─────────────────────────────────────────────────────────
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xccheckout
+*.moved-aside
+*.xcscmblueprint
+DerivedData/
+.build/
+
+# Keep the Package.resolved for reproducible builds
+!HAKI/Package.resolved
+
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Testing
+.pytest_cache/
+.hypothesis/
+.tox/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# mypy / pyright / ruff
+.mypy_cache/
+.ruff_cache/
+.pyright/
+pyrightconfig.json
+
+# PyInstaller / Nuitka build output
+*.spec
+*.manifest
+*.dist-info/
+
+# ─── Secrets / Credentials ───────────────────────────────────────────────────
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.p8
+secrets.json
+credentials.json
+
+# ─── Editors ─────────────────────────────────────────────────────────────────
+.vscode/
+*.swp
+*.swo
+*~
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+*.log
+*.tmp
+Thumbs.db

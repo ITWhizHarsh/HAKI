@@ -1,0 +1,12 @@
+# HAKI Core — pinned runtime + dev dependencies
+# Generated for Python 3.11
+# Runtime
+grpcio==1.64.1
+grpcio-tools==1.64.1
+protobuf==5.27.2
+
+# Testing
+hypothesis==6.103.2
+pytest==8.2.2
+pytest-asyncio==0.23.7
+pytest-cov==5.0.0

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Hardened runtime: allow JIT (needed if Python interpreter is embedded) -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <false/>
+
+    <!-- Allow child process (Python Core) to be spawned -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <false/>
+
+    <!-- App Sandbox: disabled for development; enable for App Store distribution -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+
+    <!-- Network client (local UNIX socket only; no remote networking required) -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!-- Temporary exception for automation (Apple Events) -->
+    <key>com.apple.security.temporary-exception.apple-events</key>
+    <array/>
+</dict>
+</plist>

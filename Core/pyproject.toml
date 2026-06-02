@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "haki-core"
+version = "0.1.0"
+description = "HAKI Core — local orchestration service (the Mind)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+dependencies = [
+    "grpcio==1.64.1",
+    "grpcio-tools==1.64.1",
+    "protobuf==5.27.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "hypothesis==6.103.2",
+    "pytest==8.2.2",
+    "pytest-asyncio==0.23.7",
+    "pytest-cov==5.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "--tb=short -q"
+
+[tool.hypothesis]
+# Global Hypothesis settings — overridden by the profile in conftest.py
+# Keep settings minimal here; profile definitions live in tests/conftest.py

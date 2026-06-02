@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+    <!-- ============================================================
+         Bundle identity
+         ============================================================ -->
+    <key>CFBundleIdentifier</key>
+    <string>com.haki.app</string>
+
+    <key>CFBundleName</key>
+    <string>HAKI</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>HAKI</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+
+    <key>CFBundleExecutable</key>
+    <string>HAKI</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <!-- Minimum macOS deployment target (Sonoma 14+) -->
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+
+    <!-- Menu-bar app: suppress the Dock icon -->
+    <key>LSUIElement</key>
+    <true/>
+
+    <!-- ============================================================
+         TCC Privacy / Usage descriptions
+         Required by macOS before prompting the user for permission.
+         ============================================================ -->
+
+    <!-- Screen Recording (ScreenCaptureKit, Req 2) -->
+    <key>NSScreenRecordingUsageDescription</key>
+    <string>HAKI needs screen-recording access to read on-screen content aloud and to capture window content for AI processing. Screen content is processed locally on your device and never uploaded.</string>
+
+    <!-- Accessibility (AXUIElement, Req 2 / 21) -->
+    <key>NSAccessibilityUsageDescription</key>
+    <string>HAKI needs accessibility access to read text from application windows, control playback, and perform Mac automation actions on your behalf. All actions require your explicit confirmation.</string>
+
+    <!-- Microphone (AVAudioEngine, Req 3) -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>HAKI needs microphone access to hear your voice commands and conduct real-time Hinglish conversations with you. Audio is processed locally and never stored without your instruction.</string>
+
+    <!-- Calendars (EventKit, Req 11/12) -->
+    <key>NSCalendarsUsageDescription</key>
+    <string>HAKI needs calendar access to create and manage events and reminders on your behalf, always with your explicit confirmation before any change is made.</string>
+
+    <!-- Reminders (EventKit, Req 12) -->
+    <key>NSRemindersUsageDescription</key>
+    <string>HAKI needs reminders access to create and manage task reminders based on your severity settings.</string>
+
+    <!-- Contacts (Mac_Controller contact resolution, Req 21.11) -->
+    <key>NSContactsUsageDescription</key>
+    <string>HAKI needs contacts access to resolve contact names when you ask it to send a message or place a call.</string>
+
+    <!-- Apple Events / Automation (AppleScript bridge, Req 21) -->
+    <!-- Note: NSAppleEventsUsageDescription is declared per-target app at runtime;
+         the entries below satisfy App Store / notarization pre-screening. -->
+    <key>NSAppleEventsUsageDescription</key>
+    <string>HAKI needs automation access to control macOS applications (such as Mail, Calendar, and messaging apps) on your behalf when you issue voice commands.</string>
+
+    <!-- ============================================================
+         Hardened runtime entitlements for notarization
+         ============================================================ -->
+    <!-- Declare in the .entitlements file; listed here for documentation. -->
+
+</dict>
+</plist>
