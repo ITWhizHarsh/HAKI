@@ -205,8 +205,6 @@ public enum TaskSeverity: Codable, Sendable, Equatable {
         return false
     }
 
-    public static var defaultSeverity: TaskSeverity { .defaultSeverity }
-
     // For SQLite storage - convert to/from String
     public var storageValue: String {
         switch self {
@@ -318,7 +316,7 @@ public struct ReminderPolicy: Codable, Sendable, Equatable {
         ReminderPolicy(severity: .exam, offsets: [-7 * 24 * 3600, -3 * 24 * 3600]),  // 1 week, 3 days
         ReminderPolicy(severity: .assignment, offsets: [-7 * 24 * 3600, -3 * 24 * 3600]),
         ReminderPolicy(severity: .birthday, offsets: [-14 * 24 * 3600, -1 * 24 * 3600]),  // 14 days, 1 day
-        ReminderPolicy(severity: .default, offsets: [-1 * 24 * 3600])  // 1 day
+        ReminderPolicy(severity: .defaultSeverity, offsets: [-1 * 24 * 3600])  // 1 day
     ]
 }
 

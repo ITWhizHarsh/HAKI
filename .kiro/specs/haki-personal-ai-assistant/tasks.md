@@ -102,7 +102,7 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Assert the app runs on macOS and the per-capability mode control is present/reachable
     - _Requirements: 20.1, 20.2_
 
-- [-] 6. Checkpoint - Phase 0 foundations
+- [x] 6. Checkpoint - Phase 0 foundations
   - Ensure all tests pass, ask the user if questions arise.
 
 ### Phase 1 — Voice spine
