@@ -13,6 +13,7 @@
 // Note: These tests use a unique test prefix to avoid colliding with
 // production Keychain entries. Cleanup happens in tearDown.
 
+#if canImport(XCTest)
 import XCTest
 @testable import HAKI
 @testable import HAKIStore
@@ -294,3 +295,4 @@ final class KeychainStoreTests: XCTestCase {
         }
     }
 }
+#endif // canImport(XCTest)

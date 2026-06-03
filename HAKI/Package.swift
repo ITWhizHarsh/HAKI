@@ -40,12 +40,12 @@ let package = Package(
         // MARK: - Library targets (one per subsystem)
         .target(
             name: "HAKIAudio",
-            dependencies: [],
+            dependencies: ["HAKIIPC"],
             path: "Sources/Subsystems/Audio"
         ),
         .target(
             name: "HAKICapture",
-            dependencies: [],
+            dependencies: ["HAKIAudio", "HAKIPermissions"],
             path: "Sources/Subsystems/Capture"
         ),
         .target(
@@ -73,6 +73,11 @@ let package = Package(
             dependencies: [.product(name: "SQLite", package: "sqlite.swift")],
             path: "Sources/Subsystems/Store"
         ),
+        .target(
+            name: "HAKITextInput",
+            dependencies: [],
+            path: "Sources/Subsystems/TextInput"
+        ),
 
         // MARK: - Test targets
         .testTarget(
@@ -85,7 +90,8 @@ let package = Package(
                 "HAKIPermissions",
                 "HAKIIPC",
                 "HAKIUI",
-                "HAKIStore"
+                "HAKIStore",
+                "HAKITextInput"
             ],
             path: "Tests/HAKITests"
         ),
@@ -100,6 +106,7 @@ let package = Package(
                 "HAKIIPC",
                 "HAKIUI",
                 "HAKIStore",
+                "HAKITextInput",
                 .product(name: "SwiftCheck", package: "SwiftCheck")
             ],
             path: "Tests/HAKIPropertyTests"

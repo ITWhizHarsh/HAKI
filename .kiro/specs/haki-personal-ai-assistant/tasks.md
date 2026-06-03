@@ -107,14 +107,14 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
 
 ### Phase 1 — Voice spine
 
-- [ ] 7. Implement the Voice_Engine streaming pipeline (Req 3)
-  - [ ] 7.1 Implement Swift audio I/O, realtime VAD, end-of-speech and barge-in detection
+- [x] 7. Implement the Voice_Engine streaming pipeline (Req 3)
+  - [x] 7.1 Implement Swift audio I/O, realtime VAD, end-of-speech and barge-in detection
     - AVAudioEngine mic tap producing 20 ms frames; on-thread VAD detecting 800 ms end-of-speech and ≥200 ms barge-in; acoustic echo cancellation on the mic path
     - _Design: Voice Pipeline. Requirements: 3.2, 3.3_
-  - [ ] 7.2 Implement streaming STT through the Model Provider with partial transcripts and failure handling
+  - [x] 7.2 Implement streaming STT through the Model Provider with partial transcripts and failure handling
     - Stream speech frames to STT, emit partial/final transcripts plus audio features; on no recognizable speech, prompt repeat and dispatch nothing
     - _Design: Voice Pipeline, Voice_Engine. Requirements: 3.4, 3.6_
-  - [ ] 7.3 Implement sentence-chunked streaming TTS with cancellation and text fallback
+  - [x] 7.3 Implement sentence-chunked streaming TTS with cancellation and text fallback
     - Segment LLM token stream into clauses, play first audio while the rest generates; cancel on barge-in; on TTS failure render response as on-screen text and notify
     - _Design: Voice Pipeline, Voice_Engine. Requirements: 3.1, 3.5, 3.7_
   - [ ]* 7.4 Write property test for unrecognized speech is never dispatched
@@ -130,14 +130,14 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Verify capture→transcript and text→audio behavior end-to-end with representative inputs
     - _Requirements: 3.4, 3.5_
 
-- [ ] 8. Implement the Language_Engine and Hinglish handling (Req 5)
-  - [ ] 8.1 Implement language composition analysis and per-token origin tagging
+- [x] 8. Implement the Language_Engine and Hinglish handling (Req 5)
+  - [x] 8.1 Implement language composition analysis and per-token origin tagging
     - Tokenize and tag each token's origin (script + lexicon heuristics + model); classify composition as hindi/english/hinglish/unknown; accept without a language picker; on uninterpretable input, not-understood + prompt rephrase
     - _Design: Language_Engine, Voice Pipeline (Hinglish). Requirements: 5.1, 5.5_
-  - [ ] 8.2 Implement generation language constraints
+  - [x] 8.2 Implement generation language constraints
     - Build the response-language constraint for the LLM prompt: Hinglish in → mixed out (≥1 Hindi-origin, ≥1 English-origin, never fully Hindi); monolingual in → same language out
     - _Design: Language_Engine. Requirements: 5.2, 5.3_
-  - [ ] 8.3 Wire per-token origin map into TTS pronunciation routing
+  - [x] 8.3 Wire per-token origin map into TTS pronunciation routing
     - Pass the origin map with the response so each Hindi-origin token uses the Hindi voice and each English-origin token uses the English voice
     - _Design: Voice Pipeline (pronunciation). Requirements: 5.4_
   - [ ]* 8.4 Write property test for language acceptance
@@ -156,8 +156,8 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Cover the not-understood + rephrase path
     - _Requirements: 5.5_
 
-- [ ] 9. Implement the Mood_Detector (Req 4)
-  - [ ] 9.1 Implement prosodic mood classification with confidence and duration gating
+- [x] 9. Implement the Mood_Detector (Req 4)
+  - [x] 9.1 Implement prosodic mood classification with confidence and duration gating
     - Classify one primary mood from {angry, sad, happy, neutral} with confidence in [0.0,1.0] from pitch/volume features via the Model Provider; clips < 1 s return unclassifiable; emit exactly one result per request
     - _Design: Mood_Detector. Requirements: 4.1, 4.7, 4.8_
   - [ ]* 9.2 Write property test for mood classification output contract
@@ -167,11 +167,11 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Default 0.6, configurable within [0.0,1.0]
     - _Requirements: 4.2_
 
-- [ ] 10. Implement the Persona_Engine (Reqs 6, 4.3–4.6)
-  - [ ] 10.1 Implement identity/intensity system-prompt shaping and mood/memory tone integration
+- [x] 10. Implement the Persona_Engine (Reqs 6, 4.3–4.6)
+  - [x] 10.1 Implement identity/intensity system-prompt shaping and mood/memory tone integration
     - Apply consistent HAKI identity at ≥3 ordered intensity levels; integrate mood and memory context into tone; at minimum intensity prefer conciseness; proceed with whatever inputs are available
     - _Design: Persona_Engine. Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [ ] 10.2 Implement the mood-to-tone mapping function
+  - [x] 10.2 Implement the mood-to-tone mapping function
     - Pure mapping over (mood, confidence, threshold): angry≥t→calming, sad≥t→encouraging, otherwise/below-threshold/unclassifiable→neutral
     - _Design: Persona_Engine. Requirements: 4.3, 4.4, 4.5, 4.6_
   - [ ]* 10.3 Write property test for mood-to-tone mapping
@@ -184,27 +184,27 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Spot-check identity presence and min-intensity conciseness
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 11. Implement the Orchestrator turn loop and intent routing
-  - [ ] 11.1 Implement the cancellable turn loop with parallel mood/language/memory dispatch
+- [x] 11. Implement the Orchestrator turn loop and intent routing
+  - [x] 11.1 Implement the cancellable turn loop with parallel mood/language/memory dispatch
     - Sequence Voice_Engine → parallel(Mood, Language, Memory placeholder) → intent classification → capability dispatch → Persona shaping → TTS; cancellable at every await for barge-in
     - _Design: The Orchestrator, Intent Routing. Requirements: 3.1, 4.8, 5.1, 6.5_
-  - [ ] 11.2 Wire intent routing to subsystem entry points
+  - [x] 11.2 Wire intent routing to subsystem entry points
     - Classify each turn into an intent (chat/recall/read_aloud/mac_command/run_automation/image/schedule/task/meta) and route to the owning subsystem, deferring side effects to the dialogue gate
     - _Design: Intent Routing. Requirements: 6.1_
   - [ ]* 11.3 Write integration test for an end-to-end chat turn
     - Drive a mocked turn from transcript to shaped TTS through the orchestrator
     - _Design: The Orchestrator_
 
-- [ ] 12. Checkpoint - Phase 1 voice spine
+- [x] 12. Checkpoint - Phase 1 voice spine
   - Ensure all tests pass, ask the user if questions arise.
 
 ### Phase 2 — Memory
 
-- [ ] 13. Implement the Memory_Brain vault and Note model (Req 7)
-  - [ ] 13.1 Implement the Note model and Obsidian-style Markdown serializer/parser
+- [x] 13. Implement the Memory_Brain vault and Note model (Req 7)
+  - [x] 13.1 Implement the Note model and Obsidian-style Markdown serializer/parser
     - Implement the `Note` and `Chunk` models and the YAML-front-matter Markdown file format (id, timestamps, source, tags, topics, superseded_by, private, body)
     - _Design: Data Models (Note), Memory, RAG & Learning. Requirements: 7.8_
-  - [ ] 13.2 Implement vault init and durable note writes with atomicity
+  - [x] 13.2 Implement vault init and durable note writes with atomicity
     - Initialize the vault directory and empty index on startup even when empty; confirm a store only after a successful durable write; on failure leave no partial note and inform the user
     - _Design: Vault + RAG design. Requirements: 7.1, 7.2, 7.4, 7.5_
   - [ ]* 13.3 Write property test for note serialization round trip
@@ -223,14 +223,14 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Assert vault + empty index are created when no notes exist
     - _Requirements: 7.4_
 
-- [ ] 14. Implement RAG indexing and retrieval (Req 7)
-  - [ ] 14.1 Implement chunk/embed indexing into the local vector index
+- [x] 14. Implement RAG indexing and retrieval (Req 7)
+  - [x] 14.1 Implement chunk/embed indexing into the local vector index
     - Chunk notes, embed via the embeddings ModelProvider, store in a rebuildable local vector index sidecar
     - _Design: Vault + RAG design (indexing). Requirements: 7.3_
-  - [ ] 14.2 Implement hybrid retrieval with term/topic filtering and superseded exclusion
+  - [x] 14.2 Implement hybrid retrieval with term/topic filtering and superseded exclusion
     - Combine vector similarity with a term/topic filter so results share ≥1 matching term/topic, exclude non-matching and superseded notes, return within 2 s; implement "what do you know about X"
     - _Design: Vault + RAG design (retrieval). Requirements: 7.3, 7.7_
-  - [ ] 14.3 Wire Memory_Brain retrieval into the orchestrator turn loop
+  - [x] 14.3 Wire Memory_Brain retrieval into the orchestrator turn loop
     - Replace the Phase-1 memory placeholder with real retrieval feeding Persona context
     - _Design: The Orchestrator. Requirements: 7.3_
   - [ ]* 14.4 Write property test for retrieval term/topic filtering excludes non-matching and superseded notes
@@ -240,7 +240,7 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Retrieval and topic queries return within 2 s
     - _Requirements: 7.3, 7.7_
 
-- [ ] 15. Implement memory deletion, export, and privacy controls (Reqs 7, 9)
+- [x] 15. Implement memory deletion, export, and privacy controls (Reqs 7, 9)
   - [ ] 15.1 Implement single-note delete, delete-all, and export with failure atomicity
     - `forget(noteId)`, `forgetAll()`, and `export()` to a single user-accessible file; confirm only on success; on failure leave data intact / produce no partial file and inform the user
     - _Design: Vault + RAG design (delete/export). Requirements: 7.6, 9.3, 9.4, 9.5, 9.6, 9.8_
@@ -263,14 +263,14 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Privacy-designation control reachable; assert no network egress for a capability in local mode
     - _Requirements: 9.2, 9.7, 20.4_
 
-- [ ] 16. Implement the Learning_Engine (Reqs 8, 9.1)
-  - [ ] 16.1 Implement conversation-end detection and durable-item extraction with privacy gate
+- [x] 16. Implement the Learning_Engine (Reqs 8, 9.1)
+  - [x] 16.1 Implement conversation-end detection and durable-item extraction with privacy gate
     - Trigger on explicit end or 300 s idle; skip private conversations; extract durable facts/preferences via the LLM; record learning incomplete when nothing is extractable
     - _Design: Autonomous Learning loop. Requirements: 8.1, 8.6, 9.1_
-  - [ ] 16.2 Implement conflict supersede and per-item write atomicity
+  - [x] 16.2 Implement conflict supersede and per-item write atomicity
     - On a conflicting value, write a new note and mark exactly the prior note superseded; on per-item write failure retain no partial note, leave prior notes unchanged, record that item incomplete
     - _Design: Autonomous Learning loop. Requirements: 8.2, 8.3, 8.7_
-  - [ ] 16.3 Implement the recently-learned record and mark-incorrect correction
+  - [x] 16.3 Implement the recently-learned record and mark-incorrect correction
     - Tag items with `learned_session`; query learned items over a configurable 1–90 day window (default 7); mark-incorrect removes and confirms
     - _Design: Autonomous Learning loop. Requirements: 8.4, 8.5_
   - [ ]* 16.4 Write property test for conflict supersede
@@ -292,19 +292,19 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Extract known facts from example transcripts
     - _Requirements: 8.1_
 
-- [ ] 17. Checkpoint - Phase 2 memory
+- [x] 17. Checkpoint - Phase 2 memory
   - Ensure all tests pass, ask the user if questions arise.
 
 ### Phase 3 — Read & comprehend
 
-- [ ] 18. Implement the Screen_Reader capture and read-aloud (Req 1)
-  - [ ] 18.1 Implement layered content capture with OCR fallback
+- [x] 18. Implement the Screen_Reader capture and read-aloud (Req 1)
+  - [x] 18.1 Implement layered content capture with OCR fallback
     - AX focused-window text in reading order (primary); PDFKit extraction for PDFs; ScreenCaptureKit + Vision OCR fallback when selectable text is empty/errors or content is image-only; resolve named apps and decline when not running/found
     - _Design: Screen_Reader (capture strategy). Requirements: 1.1, 1.2, 1.3, 1.4, 1.7, 1.9_
-  - [ ] 18.2 Implement the read-aloud playback handoff and ordered command queue
+  - [x] 18.2 Implement the read-aloud playback handoff and ordered command queue
     - Hand captured content to the Voice_Engine; process pause/resume/stop in receipt order with stop>pause>resume priority within a 200 ms window; when no text after extraction+OCR, do not play and inform the user
     - _Design: Screen_Reader (playback control). Requirements: 1.5, 1.6, 1.8_
-  - [ ] 18.3 Wire Screen_Reader to Permission_Manager and the screen-access toggle
+  - [x] 18.3 Wire Screen_Reader to Permission_Manager and the screen-access toggle
     - Gate capture on Screen Recording/Accessibility permission and the user toggle; decline with guidance when blocked
     - _Design: Screen_Reader, Permission_Manager. Requirements: 2.5_
   - [ ]* 18.4 Write property test for screen-read OCR fallback selection
@@ -323,11 +323,11 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - ≤ 3 s for ≤ 10,000 characters
     - _Requirements: 1.1_
 
-- [ ] 19. Implement the Text_Assistant (Req 16)
-  - [ ] 19.1 Implement AX field observation with confidence-gated inline correction
+- [x] 19. Implement the Text_Assistant (Req 16)
+  - [x] 19.1 Implement AX field observation with confidence-gated inline correction
     - Observe supported input fields via Accessibility; apply a spelling correction inline only at/above the configured confidence threshold
     - _Design: Text_Assistant. Requirements: 16.1_
-  - [ ] 19.2 Implement single context-aware completion with dismissal memory and disabled inertness
+  - [x] 19.2 Implement single context-aware completion with dismissal memory and disabled inertness
     - Offer at most one completion from Memory_Brain + recent input on 500 ms pause or focus-without-typing; insert on accept; never re-offer a dismissed suggestion for the same input state; when disabled do no background work
     - _Design: Text_Assistant. Requirements: 16.2, 16.3, 16.4, 16.5, 16.6_
   - [ ]* 19.3 Write property test for confidence-gated inline correction
@@ -346,16 +346,16 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Accepted completion inserts at the cursor position
     - _Requirements: 16.4_
 
-- [ ] 20. Checkpoint - Phase 3 read & comprehend
+- [x] 20. Checkpoint - Phase 3 read & comprehend
   - Ensure all tests pass, ask the user if questions arise.
 
 ### Phase 4 — Agentic core
 
-- [ ] 21. Implement the planner and Command_Plan model (Req 21)
-  - [ ] 21.1 Implement the CommandPlan/Step data model and dependency graph
+- [x] 21. Implement the planner and Command_Plan model (Req 21)
+  - [x] 21.1 Implement the CommandPlan/Step data model and dependency graph
     - Implement `CommandPlan` and `Step` (intent, actuator, args, dependsOn, classification, requiredSlots, status) with the dependency-graph semantics for ordering and parallelism
     - _Design: Data Models (CommandPlan & Step). Requirements: 17.2, 21.1_
-  - [ ] 21.2 Implement the LLM planner with memory-backed slot filling
+  - [x] 21.2 Implement the LLM planner with memory-backed slot filling
     - Convert a natural-language command into an ordered, dependency-aware plan; annotate each step with actuator and safety classification; fill slots that reference stored facts from Memory_Brain instead of prompting
     - _Design: Planning. Requirements: 21.1, 21.7_
   - [ ]* 21.3 Write property test for execution respects step dependencies and order
@@ -365,11 +365,11 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - **Property 65: Memory-backed slot filling** (Hypothesis)
     - **Validates: Requirements 21.7**
 
-- [ ] 22. Implement the Safety_Gate (Req 22)
-  - [ ] 22.1 Implement action classification and confirmation gating
+- [x] 22. Implement the Safety_Gate (Req 22)
+  - [x] 22.1 Implement action classification and confirmation gating
     - Classify steps CONSEQUENTIAL/REVERSIBLE/UNKNOWN; require confirmation describing the action before consequential/unknown steps; run reversible steps without confirmation; treat unknown as consequential
     - _Design: Safety_Gate. Requirements: 22.1, 22.4, 22.7_
-  - [ ] 22.2 Implement mid-plan pause/confirm/resume and no-response handling
+  - [x] 22.2 Implement mid-plan pause/confirm/resume and no-response handling
     - Pause at a consequential step reached mid-plan, request confirmation, resume only on confirm; on rejection or no response, do not perform the step and stop dependents, reporting completed vs not
     - _Design: Safety_Gate, Execution loop. Requirements: 22.2, 22.3, 22.5, 22.6, 22.8_
   - [ ]* 22.3 Write property test for consequential gating vs reversible pass-through

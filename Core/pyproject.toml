@@ -29,7 +29,8 @@ include = ["core*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["tests", "core/orchestrator/tests"]
+pythonpath = ["."]
 addopts = "--tb=short -q"
 
 [tool.hypothesis]

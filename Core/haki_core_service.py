@@ -77,13 +77,36 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 async def _run(socket_path: str, transport: str) -> None:
     """Start the IPC server and block until a stop signal is received."""
 
+    # ----------------------------------------------------------------
+    # Initialise Memory_Brain and Orchestrator (Task 14.3)
+    # ----------------------------------------------------------------
+    from pathlib import Path
+    from core.memory import MemoryBrain
+    from core.orchestrator import Orchestrator
+
+    vault_path = Path.home() / ".haki" / "vault"
+    # No embeddings_provider: retrieve() returns [] until an API key is
+    # configured — identical behaviour to the stub but uses the real class.
+    memory_brain = MemoryBrain(vault_path=vault_path)
+    memory_brain.init()  # Req 7.4: ensure vault exists at startup
+    logger.info("MemoryBrain initialised (vault=%s)", vault_path)
+
+    orchestrator = Orchestrator(memory_brain=memory_brain)
+    logger.info("Orchestrator created with real MemoryBrain")
+
     if transport == "grpc":
         from core.ipc import IPCServer
-        server: IPCServer | object = IPCServer(socket_path=socket_path)
+        server: IPCServer | object = IPCServer(
+            socket_path=socket_path,
+            orchestrator=orchestrator,
+        )
         logger.info("Starting gRPC IPC server on unix:%s", socket_path)
     else:
         from core.ipc import JSONIPCServer
-        server = JSONIPCServer(socket_path=socket_path)
+        server = JSONIPCServer(
+            socket_path=socket_path,
+            orchestrator=orchestrator,
+        )
         logger.info("Starting JSON IPC server on unix:%s", socket_path)
 
     # Install signal handlers that request graceful shutdown

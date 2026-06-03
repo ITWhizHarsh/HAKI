@@ -1,0 +1,9 @@
+warning: 'haki': found 2 file(s) which are unhandled; explicitly declare them as resources or exclude from the target
+    /Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/HAKI/Resources/Info.plist
+    /Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/HAKI/Resources/HAKI.entitlements
+[0/1] Planning build
+[1/1] Compiling plugin GenerateManual
+[2/2] Compiling plugin GenerateDoccReference
+Building for debugging...
+[2/5] Write swift-version--1AB21518FC5DEDBE.txt
+Build complete! (0.54s)

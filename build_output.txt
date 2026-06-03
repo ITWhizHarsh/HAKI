@@ -1,0 +1,109 @@
+[1/1] Compiling plugin GenerateManual
+[2/2] Compiling plugin GenerateDoccReference
+Building for debugging...
+[2/5] Write swift-version--1AB21518FC5DEDBE.txt
+error: emit-module command failed with exit code 1 (use -v to see invocation)
+[4/5] Emitting module HAKICapture
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:185:26: error: cannot find type 'VoiceEngineProtocol' in scope
+183 |     public func readAloud(
+184 |         content: CapturedContent,
+185 |         voiceEngine: any VoiceEngineProtocol
+    |                          `- error: cannot find type 'VoiceEngineProtocol' in scope
+186 |     ) async -> String? {
+187 |         switch content {
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:219:54: error: cannot find type 'VoiceEngineProtocol' in scope
+217 |     /// The priority logic (stop > pause > resume within 200 ms window) is
+218 |     /// applied by `drainCommands()` (Req 1.5, 1.8).
+219 |     public func processCommandQueue(voiceEngine: any VoiceEngineProtocol) {
+    |                                                      `- error: cannot find type 'VoiceEngineProtocol' in scope
+220 |         guard let command = drainCommands() else { return }
+221 |         switch command {
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:245:26: error: cannot find type 'VoiceEngineProtocol' in scope
+243 |     public func startReadAloud(
+244 |         appName: String?,
+245 |         voiceEngine: any VoiceEngineProtocol,
+    |                          `- error: cannot find type 'VoiceEngineProtocol' in scope
+246 |         permissionManager: any PermissionManagerProtocol
+247 |     ) async -> String? {
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:246:32: error: cannot find type 'PermissionManagerProtocol' in scope
+244 |         appName: String?,
+245 |         voiceEngine: any VoiceEngineProtocol,
+246 |         permissionManager: any PermissionManagerProtocol
+    |                                `- error: cannot find type 'PermissionManagerProtocol' in scope
+247 |     ) async -> String? {
+248 |         // 18.3 — permission gate first
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:266:58: error: cannot find type 'PermissionManagerProtocol' in scope
+264 |     /// Req 2.2: decline with guidance naming the missing permission(s).
+265 |     /// Req 2.5: decline with guidance when the user toggle is off.
+266 |     private func checkPermissions(permissionManager: any PermissionManagerProtocol) async -> String? {
+    |                                                          `- error: cannot find type 'PermissionManagerProtocol' in scope
+267 |         // Check TCC permissions required for .readAloud.
+268 |         // missingPermissions(for:) is nonisolated on PermissionManager (safe from any context).
+[5/5] Compiling HAKICapture ScreenReader.swift
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:185:26: error: cannot find type 'VoiceEngineProtocol' in scope
+183 |     public func readAloud(
+184 |         content: CapturedContent,
+185 |         voiceEngine: any VoiceEngineProtocol
+    |                          `- error: cannot find type 'VoiceEngineProtocol' in scope
+186 |     ) async -> String? {
+187 |         switch content {
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:219:54: error: cannot find type 'VoiceEngineProtocol' in scope
+217 |     /// The priority logic (stop > pause > resume within 200 ms window) is
+218 |     /// applied by `drainCommands()` (Req 1.5, 1.8).
+219 |     public func processCommandQueue(voiceEngine: any VoiceEngineProtocol) {
+    |                                                      `- error: cannot find type 'VoiceEngineProtocol' in scope
+220 |         guard let command = drainCommands() else { return }
+221 |         switch command {
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:245:26: error: cannot find type 'VoiceEngineProtocol' in scope
+243 |     public func startReadAloud(
+244 |         appName: String?,
+245 |         voiceEngine: any VoiceEngineProtocol,
+    |                          `- error: cannot find type 'VoiceEngineProtocol' in scope
+246 |         permissionManager: any PermissionManagerProtocol
+247 |     ) async -> String? {
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:246:32: error: cannot find type 'PermissionManagerProtocol' in scope
+244 |         appName: String?,
+245 |         voiceEngine: any VoiceEngineProtocol,
+246 |         permissionManager: any PermissionManagerProtocol
+    |                                `- error: cannot find type 'PermissionManagerProtocol' in scope
+247 |     ) async -> String? {
+248 |         // 18.3 — permission gate first
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:266:58: error: cannot find type 'PermissionManagerProtocol' in scope
+264 |     /// Req 2.2: decline with guidance naming the missing permission(s).
+265 |     /// Req 2.5: decline with guidance when the user toggle is off.
+266 |     private func checkPermissions(permissionManager: any PermissionManagerProtocol) async -> String? {
+    |                                                          `- error: cannot find type 'PermissionManagerProtocol' in scope
+267 |         // Check TCC permissions required for .readAloud.
+268 |         // missingPermissions(for:) is nonisolated on PermissionManager (safe from any context).
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:153:67: error: 'async' call in an autoclosure that does not support concurrency
+151 |         // ── 3. PDF path — PDFKit extraction (Req 1.2, 1.3) ──────────────────
+152 |         let bundleID = runningApp.bundleIdentifier ?? ""
+153 |         let isFocusedPDF = isPDFApp(bundleID: bundleID) || (await focusedURLEndsWith(pid: pid, suffix: ".pdf"))
+    |                                                                   `- error: 'async' call in an autoclosure that does not support concurrency
+154 |         if isFocusedPDF {
+155 |             if let pdfText = await extractPDFText(pid: pid), !pdfText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:269:66: error: cannot infer contextual base in reference to member 'readAloud'
+267 |         // Check TCC permissions required for .readAloud.
+268 |         // missingPermissions(for:) is nonisolated on PermissionManager (safe from any context).
+269 |         let missing = permissionManager.missingPermissions(for: .readAloud)
+    |                                                                  `- error: cannot infer contextual base in reference to member 'readAloud'
+270 |         if !missing.isEmpty {
+271 |             return permissionManager.guidanceMessage(for: missing, capability: .readAloud)
+
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Sources/Subsystems/Capture/ScreenReader.swift:271:81: error: cannot infer contextual base in reference to member 'readAloud'
+269 |         let missing = permissionManager.missingPermissions(for: .readAloud)
+270 |         if !missing.isEmpty {
+271 |             return permissionManager.guidanceMessage(for: missing, capability: .readAloud)
+    |                                                                                 `- error: cannot infer contextual base in reference to member 'readAloud'
+272 |         }
+273 | 

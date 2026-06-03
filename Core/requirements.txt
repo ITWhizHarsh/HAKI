@@ -4,6 +4,7 @@
 grpcio==1.64.1
 grpcio-tools==1.64.1
 protobuf==5.27.2
+PyYAML==6.0.3
 
 # Testing
 hypothesis==6.103.2

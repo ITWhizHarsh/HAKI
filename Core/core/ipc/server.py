@@ -337,24 +337,98 @@ class JSONIPCServer:
             )
             # TODO (Task 1.4+): forward to STT pipeline
         elif msg_type == MSG_TYPE_TURN_REQUEST:
+            turn_id = payload.get("turn_id", "")
+            transcript = payload.get("transcript", "")
+            audio_features = payload.get("audio_features", {})
             logger.debug(
-                "JSONIPCServer: received TURN_REQUEST turn_id=%s",
-                payload.get("turn_id"),
+                "JSONIPCServer: received TURN_REQUEST turn_id=%s transcript=%r",
+                turn_id,
+                transcript[:40] if transcript else "",
             )
-            # TODO (Task 1.4+): route to Orchestrator turn loop
+            if self._orchestrator is not None and transcript:
+                # Schedule the turn as a cancellable asyncio Task so that a
+                # concurrent CANCEL/BARGE_IN control event can abort it.
+                async def _run_and_stream() -> None:
+                    try:
+                        async for token in self._orchestrator.stream_turn(
+                            transcript, audio_features
+                        ):
+                            await self._write_message(
+                                writer,
+                                {
+                                    "type": MSG_TYPE_LLM_TOKEN,
+                                    "payload": {
+                                        "turn_id": turn_id,
+                                        "token": token,
+                                        "is_final": False,
+                                    },
+                                },
+                            )
+                        # Signal turn completion
+                        await self._write_message(
+                            writer,
+                            {
+                                "type": MSG_TYPE_CONTROL_EVENT,
+                                "payload": {
+                                    "event_type": "TURN_COMPLETE",
+                                    "turn_id": turn_id,
+                                },
+                            },
+                        )
+                    except asyncio.CancelledError:
+                        logger.debug("JSONIPCServer: turn %s cancelled", turn_id)
+                        await self._write_message(
+                            writer,
+                            {
+                                "type": MSG_TYPE_CONTROL_EVENT,
+                                "payload": {
+                                    "event_type": "TURN_CANCELLED",
+                                    "turn_id": turn_id,
+                                },
+                            },
+                        )
+                    except Exception as exc:
+                        logger.exception("JSONIPCServer: turn %s error: %r", turn_id, exc)
+                        await self._write_message(
+                            writer,
+                            {
+                                "type": MSG_TYPE_ERROR,
+                                "payload": {
+                                    "turn_id": turn_id,
+                                    "message": str(exc),
+                                },
+                            },
+                        )
+
+                task = asyncio.ensure_future(_run_and_stream())
+                self._orchestrator.set_current_task(task)
+            else:
+                # No orchestrator or empty transcript — echo back an error.
+                await self._write_message(
+                    writer,
+                    {
+                        "type": MSG_TYPE_ERROR,
+                        "payload": {
+                            "turn_id": turn_id,
+                            "message": "No orchestrator configured or empty transcript.",
+                        },
+                    },
+                )
         elif msg_type == MSG_TYPE_CONTROL_EVENT:
             event_type = payload.get("event_type", "")
             logger.debug("JSONIPCServer: received CONTROL_EVENT type=%s", event_type)
-            if event_type == "CANCEL":
-                # Acknowledge the cancel
+            if event_type in ("CANCEL", "BARGE_IN"):
+                # Cancel the active turn (barge-in / explicit cancel).
+                if self._orchestrator is not None:
+                    self._orchestrator.cancel()
                 await self._write_message(
                     writer,
                     {
                         "type": MSG_TYPE_CONTROL_EVENT,
-                        "payload": {"event_type": "CANCEL", "status": "acknowledged"},
+                        "payload": {"event_type": event_type, "status": "acknowledged"},
                     },
                 )
-            # BARGE_IN / END_OF_SPEECH forwarded to pipeline in later tasks
+            # END_OF_SPEECH forwarded to pipeline in later tasks
         else:
             logger.warning("JSONIPCServer: unknown message type %r", msg_type)
             await self._write_message(

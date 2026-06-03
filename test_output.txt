@@ -1,0 +1,56 @@
+[1/1] Compiling plugin GenerateManual
+[2/2] Compiling plugin GenerateDoccReference
+Building for debugging...
+[2/7] Write swift-version--1AB21518FC5DEDBE.txt
+[4/26] Compiling SwiftCheck Check.swift
+[5/26] Compiling SwiftCheck CoArbitrary.swift
+[6/27] Compiling HAKITests TTSServiceTests.swift
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Tests/HAKITests/AppShellTests.swift:14:8: error: no such module 'XCTest'
+ 12 | // via `#if canImport(XCTest)` guards — they require a signed, running app.
+ 13 | 
+ 14 | import XCTest
+    |        `- error: no such module 'XCTest'
+ 15 | @testable import HAKI
+ 16 | @testable import HAKIPermissions
+[7/27] Compiling HAKITests STTServiceTests.swift
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Tests/HAKITests/AppShellTests.swift:14:8: error: no such module 'XCTest'
+ 12 | // via `#if canImport(XCTest)` guards — they require a signed, running app.
+ 13 | 
+ 14 | import XCTest
+    |        `- error: no such module 'XCTest'
+ 15 | @testable import HAKI
+ 16 | @testable import HAKIPermissions
+error: emit-module command failed with exit code 1 (use -v to see invocation)
+[8/27] Compiling HAKITests KeychainStoreTests.swift
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Tests/HAKITests/AppShellTests.swift:14:8: error: no such module 'XCTest'
+ 12 | // via `#if canImport(XCTest)` guards — they require a signed, running app.
+ 13 | 
+ 14 | import XCTest
+    |        `- error: no such module 'XCTest'
+ 15 | @testable import HAKI
+ 16 | @testable import HAKIPermissions
+[9/27] Compiling HAKITests AppShellTests.swift
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Tests/HAKITests/AppShellTests.swift:14:8: error: no such module 'XCTest'
+ 12 | // via `#if canImport(XCTest)` guards — they require a signed, running app.
+ 13 | 
+ 14 | import XCTest
+    |        `- error: no such module 'XCTest'
+ 15 | @testable import HAKI
+ 16 | @testable import HAKIPermissions
+[10/27] Emitting module HAKITests
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Tests/HAKITests/AppShellTests.swift:14:8: error: no such module 'XCTest'
+ 12 | // via `#if canImport(XCTest)` guards — they require a signed, running app.
+ 13 | 
+ 14 | import XCTest
+    |        `- error: no such module 'XCTest'
+ 15 | @testable import HAKI
+ 16 | @testable import HAKIPermissions
+[11/27] Compiling HAKITests ScreenReaderTests.swift
+/Users/harshkumarroy/Downloads/HKR/HAKI/HAKI/Tests/HAKITests/AppShellTests.swift:14:8: error: no such module 'XCTest'
+ 12 | // via `#if canImport(XCTest)` guards — they require a signed, running app.
+ 13 | 
+ 14 | import XCTest
+    |        `- error: no such module 'XCTest'
+ 15 | @testable import HAKI
+ 16 | @testable import HAKIPermissions
+error: fatalError

@@ -9,6 +9,7 @@
 //
 // Minimum iterations: 100 (SwiftCheck default).
 
+#if canImport(XCTest)
 import XCTest
 import SwiftCheck
 @testable import HAKIAudio
@@ -126,3 +127,4 @@ final class VADPropertyTests: XCTestCase {
         }
     }
 }
+#endif // canImport(XCTest)

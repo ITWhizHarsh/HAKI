@@ -11,6 +11,7 @@
 // Note: TCC-gated tests (screen recording, accessibility) are skipped in CI
 // via `#if canImport(XCTest)` guards — they require a signed, running app.
 
+#if canImport(XCTest)
 import XCTest
 @testable import HAKI
 @testable import HAKIPermissions
@@ -199,3 +200,4 @@ final class AppShellTests: XCTestCase {
         return Array(repeating: value, count: LiveAudioEngine.samplesPerFrame)
     }
 }
+#endif // canImport(XCTest)

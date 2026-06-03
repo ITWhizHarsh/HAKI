@@ -9,6 +9,18 @@ Design reference: Autonomous Learning loop.
 Requirements: 8, 9.1.
 """
 
-from .learning_engine import LearnedItem, LearningReport, LearningEngine
+from .learning_engine import (
+    FailedItem,
+    IdleWatcher,
+    LearnedItem,
+    LearningEngine,
+    LearningReport,
+)
 
-__all__ = ["LearnedItem", "LearningReport", "LearningEngine"]
+__all__ = [
+    "FailedItem",
+    "IdleWatcher",
+    "LearnedItem",
+    "LearningEngine",
+    "LearningReport",
+]

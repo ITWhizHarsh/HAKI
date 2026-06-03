@@ -9,6 +9,7 @@
 //
 // Minimum iterations: 100 (SwiftCheck default).
 
+#if canImport(XCTest)
 import XCTest
 import SwiftCheck
 @testable import HAKI
@@ -302,3 +303,4 @@ final class KeychainStorePropertyTests: XCTestCase {
         }
     }
 }
+#endif // canImport(XCTest)
