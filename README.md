@@ -1,6 +1,7 @@
 # HAKI — Heuristic Augmented Knowledge Interface
 
 Heuristic Augmented Knowledge Interface
+---
 A local-first, privacy-respecting personal AI assistant for macOS, built as a two-process hybrid architecture.
 
 ---
