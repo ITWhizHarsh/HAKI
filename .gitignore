@@ -74,6 +74,8 @@ pyrightconfig.json
 # ─── Secrets / Credentials ───────────────────────────────────────────────────
 .env
 .env.*
+# …but keep the non-secret template
+!.env.example
 *.pem
 *.key
 *.p12

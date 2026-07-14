@@ -57,8 +57,17 @@ public final class JSONIPCClient: IPCClientProtocol, @unchecked Sendable {
     public private(set) var isConnected: Bool = false
 
     private var connection: NWConnection?
-    private var inboundContinuation: AsyncStream<ServerMessage>.Continuation?
     private let queue = DispatchQueue(label: "haki.ipc.json", qos: .userInteractive)
+
+    /// Broadcast fan-out: every active subscriber gets a copy of every
+    /// decoded `ServerMessage`.  A plain `AsyncStream` is single-consumer, so
+    /// when both `STTService` (waiting for the final transcript) and
+    /// `AppDelegate` (waiting for TTS audio chunks) iterated the same stream
+    /// they stole messages from each other — TTS chunks were silently dropped
+    /// in STT's `default:` branch and no answer was ever heard.  Each call to
+    /// `inbound` now registers an independent subscriber.
+    private var subscribers: [UUID: AsyncStream<ServerMessage>.Continuation] = [:]
+    private let subscribersLock = NSLock()
 
     /// Reconnect state
     private static let maxReconnectAttempts = 5
@@ -66,13 +75,57 @@ public final class JSONIPCClient: IPCClientProtocol, @unchecked Sendable {
     private var reconnectAttempts = 0
     private var intentionallyStopped = false
 
-    // MARK: AsyncStream
+    // MARK: AsyncStream (broadcast)
 
-    public lazy var inbound: AsyncStream<ServerMessage> = {
-        AsyncStream { [weak self] continuation in
-            self?.inboundContinuation = continuation
+    /// Returns a fresh, independent subscription to the inbound message
+    /// stream.  Multiple concurrent consumers may each access `inbound`; every
+    /// subscriber receives every message.  The subscription is automatically
+    /// unregistered when the consumer stops iterating (its `AsyncStream` is
+    /// cancelled or finishes).
+    public var inbound: AsyncStream<ServerMessage> {
+        subscribe()
+    }
+
+    private func subscribe() -> AsyncStream<ServerMessage> {
+        AsyncStream<ServerMessage> { [weak self] continuation in
+            guard let self else {
+                continuation.finish()
+                return
+            }
+            let id = UUID()
+            self.subscribersLock.lock()
+            self.subscribers[id] = continuation
+            self.subscribersLock.unlock()
+
+            continuation.onTermination = { [weak self] _ in
+                guard let self else { return }
+                self.subscribersLock.lock()
+                self.subscribers[id] = nil
+                self.subscribersLock.unlock()
+            }
         }
-    }()
+    }
+
+    /// Fan a decoded message out to every active subscriber.
+    private func broadcast(_ message: ServerMessage) {
+        subscribersLock.lock()
+        let continuations = Array(subscribers.values)
+        subscribersLock.unlock()
+        for continuation in continuations {
+            continuation.yield(message)
+        }
+    }
+
+    /// Finish every subscriber's stream (connection permanently closed).
+    private func finishAllSubscribers() {
+        subscribersLock.lock()
+        let continuations = Array(subscribers.values)
+        subscribers.removeAll()
+        subscribersLock.unlock()
+        for continuation in continuations {
+            continuation.finish()
+        }
+    }
 
     // MARK: Init
 
@@ -118,9 +171,11 @@ public final class JSONIPCClient: IPCClientProtocol, @unchecked Sendable {
     // MARK: - Private: Connection lifecycle
 
     private func openConnection() async throws {
+        // NWParameters(tls: nil, tcp:) creates a plain-text TCP-framed connection
+        // which is the correct transport for UNIX domain sockets on macOS.
         let unixConn = NWConnection(
             to: NWEndpoint.unix(path: socketPath.path),
-            using: NWParameters()
+            using: NWParameters(tls: nil, tcp: NWProtocolTCP.Options())
         )
 
         connection = unixConn
@@ -161,8 +216,7 @@ public final class JSONIPCClient: IPCClientProtocol, @unchecked Sendable {
         connection?.cancel()
         connection = nil
         if intentionallyStopped {
-            inboundContinuation?.finish()
-            inboundContinuation = nil
+            finishAllSubscribers()
         }
     }
 
@@ -173,7 +227,7 @@ public final class JSONIPCClient: IPCClientProtocol, @unchecked Sendable {
         reconnectAttempts += 1
         guard reconnectAttempts <= Self.maxReconnectAttempts else {
             print("[JSONIPCClient] Max reconnect attempts reached — giving up.")
-            inboundContinuation?.finish()
+            finishAllSubscribers()
             return
         }
 
@@ -330,12 +384,81 @@ public final class JSONIPCClient: IPCClientProtocol, @unchecked Sendable {
         case "ERROR":
             let msg = payload["message"] as? String ?? "unknown error"
             serverMsg = .error(msg)
+        case "IMAGE_RESPONSE":
+            let imageId    = payload["image_id"]      as? String ?? UUID().uuidString
+            let label      = payload["display_label"] as? String ?? "Image"
+            let b64Data    = payload["image_data"]    as? String ?? ""
+            let savedPath  = payload["saved_path"]    as? String
+            let message    = payload["message"]       as? String ?? ""
+            let success    = payload["success"]       as? Bool   ?? false
+            let imageData  = Data(base64Encoded: b64Data) ?? Data()
+            serverMsg = .imageResponse(
+                HAKIImageResponse(
+                    imageId: imageId,
+                    displayLabel: label,
+                    imageData: imageData,
+                    savedPath: savedPath,
+                    message: message,
+                    success: success
+                )
+            )
+        case "PROPOSAL":
+            let proposalId         = payload["id"]                  as? String ?? UUID().uuidString
+            let title              = payload["title"]               as? String ?? ""
+            let date               = payload["date"]                as? String
+            let time               = payload["time"]                as? String
+            let location           = payload["location"]            as? String
+            let description        = payload["description"]         as? String ?? title
+            let needsClarification = payload["needs_clarification"] as? Bool   ?? false
+            let status             = payload["status"]              as? String ?? "proposed"
+            serverMsg = .proposalReceived(
+                HAKICalendarProposal(
+                    proposalId: proposalId,
+                    title: title,
+                    date: date,
+                    time: time,
+                    location: location,
+                    description: description,
+                    needsClarification: needsClarification,
+                    status: status
+                )
+            )
+        case "REMINDER":
+            let reminderId       = payload["reminder_id"]         as? String ?? UUID().uuidString
+            let taskId           = payload["task_id"]             as? String ?? ""
+            let taskTitle        = payload["task_title"]          as? String ?? ""
+            let severity         = payload["severity"]            as? String ?? "DEFAULT"
+            let fireAt           = payload["fire_at"]             as? String ?? ""
+            let isBirthdayDayOf  = payload["is_birthday_day_of"]  as? Bool   ?? false
+            serverMsg = .reminderFired(
+                HAKIReminderNotification(
+                    reminderId: reminderId,
+                    taskId: taskId,
+                    taskTitle: taskTitle,
+                    severity: severity,
+                    fireAt: fireAt,
+                    isBirthdayDayOf: isBirthdayDayOf
+                )
+            )
+        case "AUTOMATION_PROGRESS":
+            let automationName = payload["automation_name"] as? String ?? ""
+            let step           = payload["step"]            as? String ?? ""
+            let status         = payload["status"]          as? String ?? ""
+            let message        = payload["message"]         as? String ?? ""
+            serverMsg = .automationProgress(
+                HAKIAutomationProgress(
+                    automationName: automationName,
+                    step: step,
+                    status: status,
+                    message: message
+                )
+            )
         default:
             print("[JSONIPCClient] Unknown server message type: \(typeStr)")
             return
         }
 
-        inboundContinuation?.yield(serverMsg)
+        broadcast(serverMsg)
     }
 }
 
@@ -364,6 +487,8 @@ private extension HAKIControlEvent.EventType {
         case .cancel: return "CANCEL"
         case .bargeIn: return "BARGE_IN"
         case .endOfSpeech: return "END_OF_SPEECH"
+        case .speakingStarted: return "SPEAKING_STARTED"
+        case .speakingStopped: return "SPEAKING_STOPPED"
         case .heartbeat: return "HEARTBEAT"
         }
     }
@@ -373,6 +498,8 @@ private extension HAKIControlEvent.EventType {
         case "CANCEL": self = .cancel
         case "BARGE_IN": self = .bargeIn
         case "END_OF_SPEECH": self = .endOfSpeech
+        case "SPEAKING_STARTED": self = .speakingStarted
+        case "SPEAKING_STOPPED": self = .speakingStopped
         case "HEARTBEAT": self = .heartbeat
         default: return nil
         }

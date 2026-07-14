@@ -430,6 +430,155 @@ class LanguageEngine:
 
         return "unknown"
 
+    # ------------------------------------------------------------------
+    # Task 8.2 / Req 19.4 — humanize prose (document humanization)
+    # ------------------------------------------------------------------
+
+    def humanize_prose(self, segment: str) -> str:
+        """
+        Rewrite *segment* into a more human-sounding form while preserving
+        its meaning (Requirement 19.4).
+
+        This method is called per-segment by the document-humanization
+        built-in automation.  In the current implementation it applies a
+        set of lightweight, rule-based transformations that improve
+        readability without requiring a model call — making the
+        implementation deterministic and testable without external
+        dependencies.  A production deployment can replace the body of
+        this method with an LLM call via the ``Model_Provider`` while
+        keeping the public signature unchanged.
+
+        Transformations applied
+        -----------------------
+        1. **Passive-voice approximation**: replaces common passive
+           constructions (``is done by``, ``was performed by``, ``are
+           shown by``, etc.) with active equivalents where unambiguous.
+        2. **Nominalization → verb**: converts a small set of common
+           academic nominalizations (``the utilization of`` →
+           ``using``, ``the implementation of`` → ``implementing``, etc.)
+           to shorter, more natural phrasing.
+        3. **Formal phrase simplification**: maps verbose academic phrases
+           (``in order to`` → ``to``, ``it is important to note that`` →
+           ``note that``, ``due to the fact that`` → ``because``, etc.)
+           to plainer equivalents.
+        4. **Whitespace normalization**: collapses multiple consecutive
+           spaces and strips leading/trailing whitespace.
+
+        Parameters
+        ----------
+        segment : str
+            A prose segment extracted from a LaTeX document (markup tokens
+            already stripped; this is plain prose text).
+
+        Returns
+        -------
+        str
+            The humanized prose.  The return value preserves the
+            *meaning* of the original and is never empty when the input
+            is non-empty.
+
+        Requirements: 19.4.
+        """
+        import re
+
+        if not segment.strip():
+            return segment
+
+        text = segment
+
+        # ------------------------------------------------------------------
+        # 1. Formal phrase simplification (case-insensitive where safe)
+        # ------------------------------------------------------------------
+        _FORMAL_REPLACEMENTS: list[tuple[str, str]] = [
+            # Over-wordy connectives
+            (r"\bin order to\b", "to"),
+            (r"\bdue to the fact that\b", "because"),
+            (r"\bin spite of the fact that\b", "although"),
+            (r"\bfor the purpose of\b", "for"),
+            (r"\bwith reference to\b", "about"),
+            (r"\bwith regard to\b", "about"),
+            (r"\bwith respect to\b", "about"),
+            (r"\bprior to\b", "before"),
+            (r"\bsubsequent to\b", "after"),
+            (r"\bat this point in time\b", "now"),
+            (r"\bat the present time\b", "now"),
+            (r"\bin the near future\b", "soon"),
+            (r"\bin close proximity\b", "nearby"),
+            (r"\bhas the ability to\b", "can"),
+            (r"\bis able to\b", "can"),
+            (r"\bwas able to\b", "could"),
+            (r"\bare able to\b", "can"),
+            # Epistemic hedges that add length without meaning
+            (r"\bit is important to note that\b", "note that"),
+            (r"\bit should be noted that\b", "note that"),
+            (r"\bit is worth noting that\b", "note that"),
+            (r"\bit is evident that\b", "clearly"),
+            (r"\bit is clear that\b", "clearly"),
+            (r"\bit is obvious that\b", "obviously"),
+            (r"\bneedless to say\b", ""),
+            # Redundant affirmatives
+            (r"\bbasically\b", ""),
+            (r"\bessentially\b", ""),
+            (r"\bfundamentally\b", ""),
+            (r"\bin essence\b", ""),
+            # Overly complex prepositions
+            (r"\bby means of\b", "using"),
+            (r"\bby virtue of\b", "because of"),
+            (r"\bon the basis of\b", "based on"),
+            (r"\bin light of\b", "given"),
+            (r"\bin terms of\b", "in"),
+            (r"\bfor the reason that\b", "because"),
+            (r"\bin the event that\b", "if"),
+            (r"\bin the case that\b", "if"),
+            (r"\bgiven the fact that\b", "given that"),
+        ]
+
+        for pattern, replacement in _FORMAL_REPLACEMENTS:
+            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
+        # ------------------------------------------------------------------
+        # 2. Nominalization → verb form
+        # ------------------------------------------------------------------
+        _NOMINALIZATION_REPLACEMENTS: list[tuple[str, str]] = [
+            (r"\bthe utilization of\b", "using"),
+            (r"\butilization of\b", "using"),
+            (r"\bthe implementation of\b", "implementing"),
+            (r"\bimplementation of\b", "implementing"),
+            (r"\bthe optimization of\b", "optimizing"),
+            (r"\boptimization of\b", "optimizing"),
+            (r"\bthe evaluation of\b", "evaluating"),
+            (r"\bevaluation of\b", "evaluating"),
+            (r"\bthe analysis of\b", "analyzing"),
+            (r"\banalysis of\b", "analyzing"),
+            (r"\bthe investigation of\b", "investigating"),
+            (r"\bthe examination of\b", "examining"),
+            (r"\bthe calculation of\b", "calculating"),
+            (r"\bthe determination of\b", "determining"),
+            (r"\bthe development of\b", "developing"),
+            (r"\bthe improvement of\b", "improving"),
+            (r"\bthe reduction of\b", "reducing"),
+            (r"\bthe increase of\b", "increasing"),
+            (r"\bthe measurement of\b", "measuring"),
+            (r"\bthe estimation of\b", "estimating"),
+        ]
+
+        for pattern, replacement in _NOMINALIZATION_REPLACEMENTS:
+            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
+        # ------------------------------------------------------------------
+        # 3. Whitespace normalization
+        # ------------------------------------------------------------------
+        # Collapse multiple spaces (but preserve intentional newlines)
+        text = re.sub(r"[ \t]{2,}", " ", text)
+        # Remove leading/trailing whitespace from each line
+        lines = [line.strip() for line in text.splitlines()]
+        text = "\n".join(lines)
+        # Collapse 3+ consecutive blank lines to at most 2
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        text = text.strip()
+
+        return text if text else segment
+
     @staticmethod
     def _classify_composition(
         tagged: list[TokenOrigin],

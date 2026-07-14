@@ -379,11 +379,11 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - **Property 70: No confirmation response means no execution** (Hypothesis)
     - **Validates: Requirements 22.8**
 
-- [ ] 23. Implement the Execution_Engine (Reqs 17, 21)
-  - [ ] 23.1 Implement the plan→gate→execute→verify loop with parallelism and postcondition checks
+- [x] 23. Implement the Execution_Engine (Reqs 17, 21)
+  - [x] 23.1 Implement the plan→gate→execute→verify loop with parallelism and postcondition checks
     - Execute ready steps respecting dependencies, run independent steps in parallel, verify postconditions, report executed steps on completion
     - _Design: Execution loop. Requirements: 17.2, 21.8_
-  - [ ] 23.2 Implement cancellation and failure/rejection propagation
+  - [x] 23.2 Implement cancellation and failure/rejection propagation
     - Cancel stops unstarted steps and interrupts the in-progress step within the bound, partitioning the report; failure/rejection/unreachable-site/missing-element/app-not-installed stops transitive dependents while independent steps continue, reporting completed/not-performed/failed-step-with-reason
     - _Design: ExecutionEngine, Execution loop. Requirements: 17.5, 17.6, 17.7, 21.9, 21.12, 21.13, 21.14_
   - [ ]* 23.3 Write property test for cancellation stops unstarted steps and partitions the report
@@ -396,14 +396,14 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - **Property 66: Completed plan reports executed steps** (Hypothesis)
     - **Validates: Requirements 21.8**
 
-- [ ] 24. Implement the Mac_Controller actuators (Req 21)
-  - [ ] 24.1 Implement app launch/focus and contact-resolution actuators
+- [x] 24. Implement the Mac_Controller actuators (Req 21)
+  - [x] 24.1 Implement app launch/focus and contact-resolution actuators
     - NSWorkspace/open/AppleScript launch+frontmost within budget; open closed apps before dependents; AppleScript/AX message-send and call-placement; never act on a wrong/ambiguous contact — prompt to disambiguate
     - _Design: Mac_Controller (actuation backends). Requirements: 21.2, 21.3, 21.4, 21.10, 21.11, 21.16_
-  - [ ] 24.2 Implement the Arc/CDP web actuator and Vision computer-use fallback
+  - [x] 24.2 Implement the Arc/CDP web actuator and Vision computer-use fallback
     - Open result tabs, navigate, click elements, fill forms via Chrome DevTools Protocol over loopback; when no AX/CDP selector exists, use the OCR+click vision loop gated by the Safety_Gate
     - _Design: Mac_Controller, Security Considerations (computer-use containment). Requirements: 21.5, 21.6, 21.12, 21.13_
-  - [ ] 24.3 Wire Mac_Controller to Permission_Manager for control permissions
+  - [x] 24.3 Wire Mac_Controller to Permission_Manager for control permissions
     - Without Automation/Accessibility permission, do not run control steps; inform which permission is missing, which steps are unavailable, and how to grant it
     - _Design: Mac_Controller (permissions). Requirements: 21.15_
   - [ ]* 24.4 Write property test for closed required app is opened before dependents
@@ -416,14 +416,14 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - App launch/focus, message send, call placement, opening result tabs in Arc via CDP, website operation
     - _Requirements: 21.2, 21.3, 21.4, 21.5, 21.6_
 
-- [ ] 25. Implement the Dialogue_Manager (Req 23)
-  - [ ] 25.1 Implement memory-first slot assessment and pre-execution gating
+- [x] 25. Implement the Dialogue_Manager (Req 23)
+  - [x] 25.1 Implement memory-first slot assessment and pre-execution gating
     - Assess sufficiency/missing slots; resolve missing slots from Memory_Brain first; ask only for genuinely missing slots; do not start execution until required slots are resolved and do not re-ask resolved slots
     - _Design: Dialogue_Manager integration. Requirements: 23.1, 23.2, 23.4, 23.5_
-  - [ ] 25.2 Implement mid-task pause/resume, declines, and candidate-choice presentation
+  - [x] 25.2 Implement mid-task pause/resume, declines, and candidate-choice presentation
     - Pause on mid-task decision points retaining state and resume without re-executing completed steps; declined-with-default proceeds and reports the default; declined-without-default abandons only the dependent step; present gathered candidates without auto-selecting
     - _Design: Dialogue_Manager integration. Requirements: 23.3, 23.6, 23.7, 23.8, 23.9_
-  - [ ] 25.3 Wire the Dialogue_Manager into the orchestrator and execution loop
+  - [x] 25.3 Wire the Dialogue_Manager into the orchestrator and execution loop
     - Route the intent-routing ambiguity gate and per-step slot resolution through the Dialogue_Manager
     - _Design: Intent Routing, Execution loop. Requirements: 23.1_
   - [ ]* 25.4 Write property test for no execution until required slots are resolved
@@ -445,12 +445,12 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - **Property 76: Candidate choices are never auto-selected** (Hypothesis)
     - **Validates: Requirements 23.8**
 
-- [ ] 26. Checkpoint - Phase 4 agentic core
+- [x] 26. Checkpoint - Phase 4 agentic core
   - Ensure all tests pass, ask the user if questions arise.
 
 ### Phase 5 — Productivity
 
-- [ ] 27. Implement the Comms_Reader (Req 10)
+- [x] 27. Implement the Comms_Reader (Req 10)
   - [ ] 27.1 Implement account connect/disconnect and message polling for WhatsApp and email
     - Per-account grant/revoke controls; WhatsApp via AX/CDP of the desktop app or web; email via IMAP/Gmail API; begin reading on grant, stop within 5 s on revoke
     - _Design: Comms_Reader (integration approach). Requirements: 10.5, 10.8, 10.9_
@@ -473,7 +473,7 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Incoming WhatsApp/email read on grant; reads stop on revoke
     - _Requirements: 10.1, 10.2, 10.8, 10.9_
 
-- [ ] 28. Implement the Scheduler calendar automation (Req 11)
+- [x] 28. Implement the Scheduler calendar automation (Req 11)
   - [ ] 28.1 Implement event proposal from actionables and the CalendarProposal model
     - Implement `CalendarProposal`; propose an event carrying extracted date/time/description within 5 s of identification
     - _Design: Scheduler, Data Models (CalendarProposal). Requirements: 11.1_
@@ -496,14 +496,14 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Proposal within 5 s of identification
     - _Requirements: 11.1_
 
-- [ ] 29. Implement severity-based reminders (Req 12)
-  - [ ] 29.1 Implement task creation with severity assignment and the Reminder/ReminderPolicy models
+- [x] 29. Implement severity-based reminders (Req 12)
+  - [x] 29.1 Implement task creation with severity assignment and the Reminder/ReminderPolicy models
     - Implement `Task`, `Reminder`, `ReminderPolicy`; assign every task a Severity; indeterminate severity → default + notify
     - _Design: Scheduler, Data Models (Task & Reminder). Requirements: 12.1, 12.11_
-  - [ ] 29.2 Implement effective reminder-offset computation using the Clock
+  - [x] 29.2 Implement effective reminder-offset computation using the Clock
     - Compute reminder times = due date + effective offsets (custom-when-valid else defaults: assignment/exam {−7d,−3d}, birthday {−14d,−1d}); fire elapsed-window reminders immediately and schedule future ones normally; all times from the Clock
     - _Design: Scheduler. Requirements: 12.2, 12.3, 12.4, 12.7, 12.8, 12.10_
-  - [ ] 29.3 Implement dual-channel issuance, per-reminder failure isolation, and birthday day-of prompt
+  - [x] 29.3 Implement dual-channel issuance, per-reminder failure isolation, and birthday day-of prompt
     - Issue each reminder via Voice_Engine and on-screen notification; a single reminder failure still issues the rest and notifies; prompt on the day of a birthday to confirm wishes sent
     - _Design: Scheduler. Requirements: 12.5, 12.6, 12.9_
   - [ ]* 29.4 Write property test for every task has a severity
@@ -525,11 +525,11 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Confirm-wishes prompt fires on the birthday
     - _Requirements: 12.5_
 
-- [ ] 30. Implement the Task_Tracker (Req 13)
-  - [ ] 30.1 Implement the task list with sorted incomplete listing and persistence atomicity
+- [x] 30. Implement the Task_Tracker (Req 13)
+  - [x] 30.1 Implement the task list with sorted incomplete listing and persistence atomicity
     - Maintain tasks with due dates and severity; return incomplete tasks ordered by due date within 2 s; on add failure add no partial entry, inform, retain details for retry
     - _Design: Task_Tracker. Requirements: 13.1, 13.2, 13.7_
-  - [ ] 30.2 Implement due-date prompting, completion transitions, and prerequisite tracking
+  - [x] 30.2 Implement due-date prompting, completion transitions, and prerequisite tracking
     - Ask within 60 s of a due date passing; mark complete on user report/detection and stop reminders; report incomplete prerequisites on status request
     - _Design: Task_Tracker. Requirements: 13.3, 13.4, 13.5, 13.6_
   - [ ]* 30.3 Write property test for incomplete tasks listed sorted by due date
@@ -551,16 +551,16 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Task list ≤ 2 s; due-date prompt within 60 s
     - _Requirements: 13.2, 13.3_
 
-- [ ] 31. Checkpoint - Phase 5 productivity
+- [x] 31. Checkpoint - Phase 5 productivity
   - Ensure all tests pass, ask the user if questions arise.
 
 ### Phase 6 — Creative & automations
 
-- [ ] 32. Implement the Image_Studio (Req 15)
-  - [ ] 32.1 Implement image generation and edit-target resolution over session history
+- [x] 32. Implement the Image_Studio (Req 15)
+  - [x] 32.1 Implement image generation and edit-target resolution over session history
     - Generate via the image ModelProvider, display in the UI; maintain session image history so an unspecified edit resolves to the most recent image and an explicit reference resolves to that image
     - _Design: Image_Studio. Requirements: 15.1, 15.2, 15.3_
-  - [ ] 32.2 Implement save-with-confirm and failure messaging
+  - [x] 32.2 Implement save-with-confirm and failure messaging
     - Save to the designated user-accessible folder and confirm; on save failure keep the image in-session and inform; on generation failure inform with reason
     - _Design: Image_Studio. Requirements: 15.4, 15.5, 15.6_
   - [ ]* 32.3 Write property test for image edit target resolution
@@ -570,11 +570,11 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Save+confirm path and both failure messages
     - _Requirements: 15.4, 15.5, 15.6_
 
-- [ ] 33. Implement the Automation_Library (Req 17)
-  - [ ] 33.1 Implement named-automation storage and the NamedAutomation model
+- [x] 33. Implement the Automation_Library (Req 17)
+  - [x] 33.1 Implement named-automation storage and the NamedAutomation model
     - Implement `NamedAutomation`; store name + ordered steps; load by name yields equal name and ordered steps
     - _Design: Automation_Library, Data Models (NamedAutomation). Requirements: 17.1, 17.3_
-  - [ ] 33.2 Implement exact-name invocation, nearest-name suggestion, and progress/cancel reporting over the Execution_Engine
+  - [x] 33.2 Implement exact-name invocation, nearest-name suggestion, and progress/cancel reporting over the Execution_Engine
     - Run by exact name on the shared Execution_Engine; on no exact match run nothing and suggest the nearest stored name; report the currently executing step and support cancel
     - _Design: Automation_Library + Execution_Engine. Requirements: 17.2, 17.4, 17.5, 17.6, 17.7_
   - [ ]* 33.3 Write property test for automation definition round trip
@@ -584,8 +584,8 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - **Property 52: Unknown automation name does not execute and suggests nearest** (Hypothesis)
     - **Validates: Requirements 17.4**
 
-- [ ] 34. Implement the question-paper analysis built-in automation (Req 18)
-  - [ ] 34.1 Implement the question-paper analysis plan steps
+- [x] 34. Implement the question-paper analysis built-in automation (Req 18)
+  - [x] 34.1 Implement the question-paper analysis plan steps
     - Require ≥1 paper (else don't start); extract topics per paper; identify topics recurring in ≥2 papers; cross-reference recurring topics against available course content via Memory_Brain/RAG and annotate; present a prioritized chapter list ordered by recurrence; complete only when the list is presented; on partial processing complete over processed papers and report which failed and why
     - _Design: Built-in automations (Question-Paper Analysis). Requirements: 18.1, 18.2, 18.3, 18.4, 18.5, 18.6_
   - [ ]* 34.2 Write property test for question-paper analysis requires at least one paper
@@ -601,11 +601,11 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - **Property 58: Prioritized list ordered by recurrence, computed over processed papers** (Hypothesis)
     - **Validates: Requirements 18.4, 18.5**
 
-- [ ] 35. Implement the document-humanization built-in automation (Req 19)
-  - [ ] 35.1 Implement LaTeX prose/markup separation and prose segmentation
+- [x] 35. Implement the document-humanization built-in automation (Req 19)
+  - [x] 35.1 Implement LaTeX prose/markup separation and prose segmentation
     - Parse LaTeX and separate prose from markup; on unparseable/no-prose don't start and inform with reason; segment prose into 800–1200 word chunks with a possibly-shorter final segment
     - _Design: Built-in automations (Document Humanization). Requirements: 19.1, 19.2, 19.3_
-  - [ ] 35.2 Implement segment humanization and atomic write-back preserving markup
+  - [x] 35.2 Implement segment humanization and atomic write-back preserving markup
     - Humanize each segment via the Language_Engine preserving meaning; write humanized prose back preserving original markup; complete only when every segment is written; on per-segment write failure report not-complete, warn which failed, never overwrite saved segments with unsaved content
     - _Design: Built-in automations, Language_Engine. Requirements: 19.4, 19.5, 19.6_
   - [ ]* 35.3 Write property test for prose segmentation bounds
@@ -621,15 +621,15 @@ Tasks follow the design's 7-phase rollout (Phase 0 Foundations → Phase 6 Creat
     - Unparseable/no-prose path (19.2) and humanization meaning preservation (19.4)
     - _Requirements: 19.2, 19.4_
 
-- [ ] 36. Final integration and wiring
-  - [ ] 36.1 Wire all Phase 5–6 intents into the orchestrator and menu-bar UI
+- [x] 36. Final integration and wiring
+  - [x] 36.1 Wire all Phase 5–6 intents into the orchestrator and menu-bar UI
     - Connect schedule/task/image/run_automation intents through intent routing and the Dialogue_Manager gate; surface proposals, reminders, automation progress, and images in the SwiftUI panels
     - _Design: Intent Routing, The Orchestrator. Requirements: 6.1_
   - [ ]* 36.2 Write end-to-end integration test across a multi-subsystem command
     - Drive a command that spans Mac control, memory, scheduling, and dialogue with mocked models
     - _Design: Architecture_
 
-- [ ] 37. Final checkpoint - Ensure all tests pass
+- [x] 37. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

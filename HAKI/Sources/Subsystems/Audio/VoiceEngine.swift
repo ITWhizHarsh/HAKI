@@ -94,6 +94,12 @@ public protocol VoiceEngineProtocol: AnyObject, Sendable {
 ///   • Partial and final transcripts — plus `.noSpeechDetected` — are emitted
 ///     on the outer `VoiceEvent` stream.
 ///   • On `.bargeIn` the speech buffer is cleared (that segment is discarded).
+///
+/// Mood DSP (api_instructions_by_hkr.txt):
+///   • A `MoodDSP` instance runs alongside the audio pipeline.
+///   • On `.endOfSpeech`, the accumulated frames are analysed for mood.
+///   • The mood tag is injected into the final transcript payload before IPC
+///     dispatch: "[METADATA: MOOD=ANGRY_SHOUT] transcript text".
 public final class VoiceEngine: VoiceEngineProtocol, @unchecked Sendable {
 
     // MARK: - Dependencies
@@ -101,6 +107,9 @@ public final class VoiceEngine: VoiceEngineProtocol, @unchecked Sendable {
     private let audioEngine: AudioEngineProtocol
     private let sttService: STTServiceProtocol
     let ttsService: any TTSServiceProtocol
+
+    // MARK: - Mood DSP
+    private let moodDSP = MoodDSP()
 
     // MARK: - State
 
@@ -269,7 +278,6 @@ public final class VoiceEngine: VoiceEngineProtocol, @unchecked Sendable {
                 speechBuffer.append(frame)
             }
             emit(.audioFrame(frame))
-
         case .endOfSpeech:
             emit(.endOfSpeech)
 
@@ -281,7 +289,11 @@ public final class VoiceEngine: VoiceEngineProtocol, @unchecked Sendable {
                 return copy
             }
 
-            await runSTT(frames: framesForSTT)
+            // Analyse mood from the accumulated frames before STT dispatch.
+            // The dominant mood tag across all frames is used.
+            let moodTag: MoodTag = moodDSP.analyzeSegment(frames: framesForSTT)
+
+            await runSTT(frames: framesForSTT, moodTag: moodTag)
 
         case .bargeIn:
             // Discard the in-progress speech buffer — we're not transcribing it.
@@ -294,7 +306,7 @@ public final class VoiceEngine: VoiceEngineProtocol, @unchecked Sendable {
     /// Invoke the STT service for the collected frames and forward results.
     ///
     /// Must be called off the audio realtime thread (called from the pump task).
-    private func runSTT(frames: [AudioFrame]) async {
+    private func runSTT(frames: [AudioFrame], moodTag: MoodTag = .neutral) async {
         guard !frames.isEmpty else { return }
 
         let sttStream = sttService.transcribe(frames: frames)
@@ -304,7 +316,9 @@ public final class VoiceEngine: VoiceEngineProtocol, @unchecked Sendable {
                 emit(.partialTranscript(text))
 
             case .final(let text, let features):
-                emit(.finalTranscript(text, audioFeatures: features))
+                // Inject mood metadata prefix before IPC dispatch (mood DSP protocol).
+                let taggedText = moodDSP.inject(mood: moodTag, into: text)
+                emit(.finalTranscript(taggedText, audioFeatures: features))
 
             case .noSpeechDetected:
                 // Emit the event; callers that show a UI use `noSpeechPrompt`.

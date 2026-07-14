@@ -84,11 +84,9 @@ class NoteSerializer:
             sort_keys=False,
         ).rstrip("\n")
 
-        # Reconstruct body: if it has trailing newlines strip them to keep
-        # the file clean, but always separate body from front matter with
-        # exactly one blank line.
-        body = note.body.rstrip("\n")
-        return f"---\n{yaml_str}\n---\n\n{body}"
+        # Separate body from front matter with exactly one blank line.
+        # We preserve the body verbatim so that deserialize(serialize(note)) == note.
+        return f"---\n{yaml_str}\n---\n\n{note.body}"
 
     def deserialize(self, markdown: str) -> Note:
         """
@@ -182,7 +180,7 @@ class NoteSerializer:
         # Drop exactly one leading blank line if present (standard Obsidian format).
         if body_lines and body_lines[0].strip() == "":
             body_lines = body_lines[1:]
-        body = "".join(body_lines).rstrip("\n")
+        body = "".join(body_lines)
 
         try:
             fm_dict = yaml.safe_load(yaml_str)

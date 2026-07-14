@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAKI Architecture Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fdfbf7;
+            color: #1a1a1a;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(229, 231, 235, 0.5);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .mono {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .nav-link.active {
+            border-bottom: 2px solid #0f172a;
+            color: #0f172a;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+<!-- Chosen Palette: Warm Minimalist (Sand, Slate, and Soft Amber) -->
+<!-- Application Structure Plan: 
+    1. Introduction: Contextualizing the 8GB M2 constraint.
+    2. Interactive Memory Monitor: A real-time aggregation tool where users can toggle stack components to see RAM impact.
+    3. Hardware Allocation Visualizer: Breaking down the heterogeneous compute strategy (CPU vs GPU vs ANE).
+    4. Component Deep Dive: Modular sections for each of the 6 core models (xLAM, Bonsai, WhisperKit, etc.).
+    5. Conclusion: Synthesis of the architecture's viability.
+    WHY: This structure prioritizes the '3.5GB RAM limit' as the central interactive theme, allowing users to understand the trade-offs of localized AI.
+-->
+<!-- Visualization & Content Choices:
+    - RAM Aggregator: Doughnut Chart (Chart.js) -> Show current memory load vs. 3.5GB limit -> User interactivity via toggles.
+    - Compute Map: Horizontal Bar Chart (Chart.js) -> Visualize model distribution across hardware blocks (ANE/GPU/CPU).
+    - Latency Matrix: Simple data cards with performance metrics.
+    - Model Details: Reactive HTML blocks that update based on selection.
+    - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+-->
+
+<nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-stone-200">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold">H</div>
+            <span class="font-bold text-xl tracking-tight">HAKI <span class="text-stone-400 font-light">Architect</span></span>
+        </div>
+        <div class="hidden md:flex space-x-6 text-sm font-medium text-stone-500">
+            <button onclick="scrollToSection('hero')" class="nav-link hover:text-slate-900 transition">Overview</button>
+            <button onclick="scrollToSection('monitor')" class="nav-link hover:text-slate-900 transition">Memory Stack</button>
+            <button onclick="scrollToSection('hardware')" class="nav-link hover:text-slate-900 transition">Hardware</button>
+            <button onclick="scrollToSection('models')" class="nav-link hover:text-slate-900 transition">Models</button>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-6xl mx-auto px-4 py-12">
+    
+    <!-- Hero Section -->
+    <section id="hero" class="mb-20 text-center md:text-left">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <h1 class="text-5xl font-bold leading-tight mb-6 text-slate-900">
+                    The 8GB Frontier: <br><span class="text-amber-600 italic font-medium">Local AI Orchestration</span>
+                </h1>
+                <p class="text-lg text-stone-600 mb-8 leading-relaxed">
+                    Deploying a continuously listening, agentic AI on a MacBook Air M2 with limited memory is an optimization masterclass. 
+                    The HAKI framework targets a strict <strong>3.5GB RAM ceiling</strong> to prevent SSD swap and system degradation while maintaining sub-300ms latency.
+                </p>
+                <div class="flex flex-wrap gap-4 justify-center md:justify-start">
+                    <div class="px-4 py-2 bg-slate-100 rounded-full text-xs font-semibold uppercase tracking-wider text-slate-600">8GB Unified RAM</div>
+                    <div class="px-4 py-2 bg-amber-50 rounded-full text-xs font-semibold uppercase tracking-wider text-amber-700">Apple Silicon M2</div>
+                    <div class="px-4 py-2 bg-green-50 rounded-full text-xs font-semibold uppercase tracking-wider text-green-700">Zero-Swap Target</div>
+                </div>
+            </div>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-stone-100">
+                <div class="mb-4 flex justify-between items-end">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest">Active Memory Status</h3>
+                    <span id="ram-total-display" class="text-3xl font-mono font-bold text-slate-900">2.77 GB</span>
+                </div>
+                <div class="w-full bg-stone-100 h-4 rounded-full overflow-hidden mb-6">
+                    <div id="ram-progress-bar" class="bg-amber-500 h-full transition-all duration-500" style="width: 79%;"></div>
+                </div>
+                <p class="text-xs text-stone-400 italic">Target Safety Threshold: 3.5 GB (Critical for IDE stability)</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Memory Aggregator Section -->
+    <section id="monitor" class="mb-24 scroll-mt-20">
+        <div class="bg-stone-50 p-8 md:p-12 rounded-[2rem] border border-stone-200">
+            <div class="mb-10 text-center">
+                <h2 class="text-3xl font-bold mb-4">Stack Memory Aggregator</h2>
+                <p class="text-stone-500 max-w-2xl mx-auto">
+                    The HAKI stack is modular. Toggle components below to see how different model configurations impact the unified memory pool. 
+                    The fallback brain and agent brain are architected to be mutually exclusive to save bandwidth.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="space-y-4" id="component-toggles">
+                    <!-- Toggles generated by JS -->
+                </div>
+                <div class="flex flex-col justify-center items-center">
+                    <div class="chart-container">
+                        <canvas id="ramChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hardware Scheduling Section -->
+    <section id="hardware" class="mb-24 scroll-mt-20">
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="md:col-span-1">
+                <h2 class="text-3xl font-bold mb-6">Heterogeneous Scheduling</h2>
+                <p class="text-stone-600 mb-6 leading-relaxed">
+                    By offloading sensory pipelines to the <strong>Apple Neural Engine (ANE)</strong> and reserving the <strong>Metal GPU</strong> for agentic reasoning, 
+                    we eliminate hardware contention that typically causes UI lag in AI-integrated operating systems.
+                </p>
+                <ul class="space-y-4">
+                    <li class="flex items-start space-x-3">
+                        <div class="w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+                        <span class="text-sm text-stone-700"><strong>Metal GPU:</strong> Reserved for xLAM Agent tasks.</span>
+                    </li>
+                    <li class="flex items-start space-x-3">
+                        <div class="w-2 h-2 mt-2 bg-green-500 rounded-full"></div>
+                        <span class="text-sm text-stone-700"><strong>Neural Engine:</strong> Handles Whisper and Kokoro.</span>
+                    </li>
+                    <li class="flex items-start space-x-3">
+                        <div class="w-2 h-2 mt-2 bg-orange-500 rounded-full"></div>
+                        <span class="text-sm text-stone-700"><strong>CPU:</strong> Manages Python orchestration and Mood Analysis.</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="md:col-span-2 bg-white border border-stone-200 p-6 rounded-2xl">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="hardwareChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Model Deep Dive Section -->
+    <section id="models" class="mb-24 scroll-mt-20">
+        <h2 class="text-3xl font-bold mb-10 text-center">Core Component Architecture</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="model-grid">
+            <!-- Cards generated by JS -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-stone-200 py-12 text-center">
+        <p class="text-sm text-stone-400 mb-2 font-mono">HAKI FRAMEWORK v1.0.4 - M2 OPTIMIZED</p>
+        <p class="text-xs text-stone-300">Built for the Apple Silicon Local AI community.</p>
+    </footer>
+
+</main>
+
+<script>
+    const HAKI_DATA = [
+        {
+            id: 'agent',
+            name: 'OS Agent LLM',
+            model: 'xLAM-2-3b-fc-r',
+            repo: 'mlx-community/xLAM-2-3b-fc-r-4bit',
+            ram: 1.85,
+            target: 'Metal GPU',
+            active: true,
+            desc: 'Agentic brain for tool-calling and macOS AX automation. Fine-tuned with APIGen-MT.'
+        },
+        {
+            id: 'fallback',
+            name: 'Fallback LLM',
+            model: 'Bonsai-8B',
+            repo: 'prism-ml/Bonsai-8B-mlx-1bit',
+            ram: 1.28,
+            target: 'Metal GPU',
+            active: false,
+            desc: 'Extreme 1-bit quantization. 8B intelligence in 1.2GB. Secondary fallback brain.'
+        },
+        {
+            id: 'stt',
+            name: 'Streaming STT',
+            model: 'WhisperKit (Tiny)',
+            repo: 'argmaxinc/WhisperKit',
+            ram: 0.15,
+            target: 'Apple Neural Engine',
+            active: true,
+            desc: 'Cancellable streaming pipeline. CoreML offloaded to isolate memory bandwidth.'
+        },
+        {
+            id: 'tts',
+            name: 'Streaming TTS',
+            model: 'Kokoro-82M',
+            repo: 'aufklarer/Kokoro-CoreML',
+            ram: 0.17,
+            target: 'Apple Neural Engine',
+            active: true,
+            desc: 'Hinglish code-switching native. Zero-sampling deterministic forward pass.'
+        },
+        {
+            id: 'mood',
+            name: 'Mood Classifier',
+            model: 'Mel-Spec CNN',
+            repo: 'SpeechShield/Edge-Emotion',
+            ram: 0.05,
+            target: 'CPU (ONNX)',
+            active: true,
+            desc: 'Ultralight prosody analysis. Captures non-verbal acoustic cues under 10ms.'
+        },
+        {
+            id: 'embed',
+            name: 'Embeddings',
+            model: 'Granite-97M-R2',
+            repo: 'ibm-granite/multilingual-r2',
+            ram: 0.15,
+            target: 'CPU',
+            active: true,
+            desc: 'Hinglish semantic search for Obsidian vaults. 32k context via ModernBERT.'
+        }
+    ];
+
+    let ramChart, hardwareChart;
+
+    function initToggles() {
+        const container = document.getElementById('component-toggles');
+        HAKI_DATA.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-4 glass-card rounded-xl';
+            div.innerHTML = `
+                <div>
+                    <h4 class="font-bold text-sm text-slate-800">${item.name}</h4>
+                    <p class="text-xs text-stone-400 font-mono">${item.ram.toFixed(2)} GB | ${item.target}</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" ${item.active ? 'checked' : ''} onchange="toggleComponent('${item.id}')" class="sr-only peer">
+                    <div class="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function initModelGrid() {
+        const container = document.getElementById('model-grid');
+        HAKI_DATA.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'p-6 bg-white border border-stone-200 rounded-2xl shadow-sm hover:border-amber-200 transition-colors';
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <span class="px-2 py-1 bg-stone-100 text-[10px] font-bold text-stone-600 rounded uppercase tracking-wider">${item.target}</span>
+                    <span class="text-xs font-mono font-bold text-amber-600">${item.ram} GB</span>
+                </div>
+                <h3 class="text-lg font-bold mb-1">${item.name}</h3>
+                <p class="text-xs font-mono text-stone-400 mb-4">${item.model}</p>
+                <p class="text-sm text-stone-600 mb-6 leading-snug">${item.desc}</p>
+                <div class="flex items-center text-xs text-slate-400 space-x-1 opacity-60 hover:opacity-100 transition">
+                    <span class="block w-2 h-2 rounded-full bg-slate-200"></span>
+                    <span>${item.repo}</span>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function calculateTotalRAM() {
+        const orchestrator = 0.4; // Base Swift/Python overhead
+        const activeSum = HAKI_DATA.filter(i => i.active).reduce((acc, curr) => acc + curr.ram, 0);
+        return parseFloat((activeSum + orchestrator).toFixed(2));
+    }
+
+    function updateVisuals() {
+        const total = calculateTotalRAM();
+        const display = document.getElementById('ram-total-display');
+        const bar = document.getElementById('ram-progress-bar');
+        
+        display.innerText = `${total} GB`;
+        const percentage = (total / 3.5) * 100;
+        bar.style.width = `${Math.min(percentage, 100)}%`;
+        
+        if (total > 3.5) {
+            bar.classList.remove('bg-amber-500');
+            bar.classList.add('bg-red-500');
+            display.classList.add('text-red-600');
+        } else {
+            bar.classList.remove('bg-red-500');
+            bar.classList.add('bg-amber-500');
+            display.classList.remove('text-red-600');
+        }
+
+        // Update Charts
+        updateRAMChart();
+        updateHardwareChart();
+    }
+
+    function toggleComponent(id) {
+        const item = HAKI_DATA.find(i => i.id === id);
+        item.active = !item.active;
+        
+        // Logical constraint: Fallback and Agent shouldn't both be active in HAKI core
+        if (id === 'agent' && item.active) {
+            HAKI_DATA.find(i => i.id === 'fallback').active = false;
+            refreshToggles();
+        } else if (id === 'fallback' && item.active) {
+            HAKI_DATA.find(i => i.id === 'agent').active = false;
+            refreshToggles();
+        }
+        
+        updateVisuals();
+    }
+
+    function refreshToggles() {
+        document.getElementById('component-toggles').innerHTML = '';
+        initToggles();
+    }
+
+    function initRAMChart() {
+        const ctx = document.getElementById('ramChart').getContext('2d');
+        ramChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: HAKI_DATA.filter(i => i.active).map(i => i.name).concat(['Orchestrator']),
+                datasets: [{
+                    data: HAKI_DATA.filter(i => i.active).map(i => i.ram).concat([0.4]),
+                    backgroundColor: [
+                        '#0f172a', '#d97706', '#059669', '#2563eb', '#7c3aed', '#db2777', '#94a3b8'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
+                    tooltip: { enabled: true }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+
+    function updateRAMChart() {
+        const active = HAKI_DATA.filter(i => i.active);
+        ramChart.data.labels = active.map(i => i.name).concat(['Orchestrator']);
+        ramChart.data.datasets[0].data = active.map(i => i.ram).concat([0.4]);
+        ramChart.update();
+    }
+
+    function initHardwareChart() {
+        const ctx = document.getElementById('hardwareChart').getContext('2d');
+        const hardwareGroups = { 'Metal GPU': 0, 'Apple Neural Engine': 0, 'CPU': 0 };
+        
+        HAKI_DATA.forEach(i => {
+            if (i.target.includes('GPU')) hardwareGroups['Metal GPU'] += i.ram;
+            else if (i.target.includes('Engine')) hardwareGroups['Apple Neural Engine'] += i.ram;
+            else hardwareGroups['CPU'] += i.ram;
+        });
+
+        hardwareChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Metal GPU', 'Neural Engine (ANE)', 'CPU Core'],
+                datasets: [{
+                    label: 'RAM Allocation (GB)',
+                    data: [hardwareGroups['Metal GPU'], hardwareGroups['Apple Neural Engine'], hardwareGroups['CPU'] + 0.4],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b']
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { grid: { display: false }, title: { display: true, text: 'Memory Impact (GB)' } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function updateHardwareChart() {
+        const groups = { 'Metal GPU': 0, 'Apple Neural Engine': 0, 'CPU': 0 };
+        HAKI_DATA.filter(i => i.active).forEach(i => {
+            if (i.target.includes('GPU')) groups['Metal GPU'] += i.ram;
+            else if (i.target.includes('Engine')) groups['Apple Neural Engine'] += i.ram;
+            else groups['CPU'] += i.ram;
+        });
+        hardwareChart.data.datasets[0].data = [groups['Metal GPU'], groups['Apple Neural Engine'], groups['CPU'] + 0.4];
+        hardwareChart.update();
+    }
+
+    function scrollToSection(id) {
+        document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    }
+
+    window.onload = () => {
+        initToggles();
+        initModelGrid();
+        initRAMChart();
+        initHardwareChart();
+        updateVisuals();
+    };
+</script>
+
+</body>
+</html>

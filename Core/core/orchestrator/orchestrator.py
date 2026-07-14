@@ -90,6 +90,20 @@ class TurnContext:
     # Populated by intent routing phase.
     intent: Intent = Intent.UNKNOWN
 
+    # Extra context injected by subsystems or the IPC layer (e.g. resolved
+    # DialogueManager slots, injected subsystem instances, or IPC callbacks).
+    # Keys used by capability handlers:
+    #   "ipc_writer"         — async (dict) -> None callable for sending IPC msgs
+    #   "scheduler"          — core.scheduler.Scheduler instance
+    #   "task_tracker"       — core.scheduler.TaskTracker instance
+    #   "automation_library_instance" — core.automation.AutomationLibrary instance
+    #   "image_studio"       — core.image_studio.ImageStudio instance
+    #   "automation_name"    — resolved automation name slot
+    #   "event_title"        — resolved event title slot
+    #   "event_datetime"     — resolved event datetime slot
+    #   "task_title"         — resolved task title slot
+    extras: dict[str, Any] = field(default_factory=dict)
+
 
 # ---------------------------------------------------------------------------
 # Memory_Brain stub (placeholder until Task 7.x implements the real brain)
@@ -168,12 +182,24 @@ class Orchestrator:
         dialogue_manager: DialogueManager | None = None,
         llm_provider: Any | None = None,
         intent_router: "IntentRouter | None" = None,
+        # New engines (wired in by haki_core_service.py)
+        llm_router: Any | None = None,       # core.model_provider.LLMRouter
+        stt_engine: Any | None = None,       # core.model_provider.STTEngine
+        tts_engine: Any | None = None,       # core.model_provider.TTSEngine
+        haki_brain: Any | None = None,       # core.memory.HAKIBrain
     ) -> None:
         self._mood_detector: MoodDetector = mood_detector or MoodDetector()
         self._language_engine: LanguageEngine = language_engine or LanguageEngine()
         self._memory_brain: Any = memory_brain or _MemoryBrainStub()
         self._persona_engine: PersonaEngine = persona_engine or PersonaEngine()
         self._dialogue_manager: DialogueManager = dialogue_manager or DialogueManager()
+
+        # New AI engines — stored as optional attributes; subsystems that need them
+        # call self._llm_router, self._stt_engine, etc.
+        self._llm_router: Any = llm_router
+        self._stt_engine: Any = stt_engine
+        self._tts_engine: Any = tts_engine
+        self._haki_brain: Any = haki_brain
 
         if llm_provider is None:
             _registry = ModelProviderRegistry()
@@ -195,6 +221,18 @@ class Orchestrator:
         # Stored so tests and subsystems can inspect the classification.
         self._last_intent_result: "IntentResult | None" = None
 
+        # Running conversation history for the lifetime of this Orchestrator
+        # instance (i.e. until the Core process exits / the app quits).
+        # Each entry is {"role": "user"|"assistant", "content": str}.
+        # Injected into ctx.extras["conversation_history"] before dispatch so
+        # the chat handler can pass it to the LLM, and appended to after each
+        # turn (trimmed to the last 20 entries / 10 exchanges).
+        self._conversation_history: list[dict[str, Any]] = []
+
+        # Background fire-and-forget tasks (e.g. durable conversation logging).
+        # Tracked so they are not garbage-collected before completion.
+        self._bg_tasks: set[asyncio.Task[Any]] = set()
+
         # Cancellation state.
         self._cancel_event: asyncio.Event = asyncio.Event()
         # The asyncio.Task wrapping the current run_turn coroutine, if any.
@@ -208,6 +246,7 @@ class Orchestrator:
         self,
         transcript: str,
         audio_features: dict[str, Any] | None = None,
+        extras: dict[str, Any] | None = None,
     ) -> str:
         """
         Execute one conversational turn end-to-end and return shaped text.
@@ -223,6 +262,10 @@ class Orchestrator:
         audio_features : dict | None
             Prosodic features extracted by the Voice_Engine alongside the
             transcript (pitch, volume, …), forwarded to Mood_Detector.
+        extras : dict | None
+            Optional bag of extra context injected by the IPC layer or
+            subsystems.  Passed verbatim to capability handlers via
+            ``TurnContext.extras``.
 
         Returns
         -------
@@ -235,7 +278,23 @@ class Orchestrator:
         ctx = TurnContext(
             transcript=transcript,
             audio_features=audio_features or {},
+            extras=extras or {},
         )
+        
+        # Inject AI engines into extras so capability handlers can access them
+        if self._llm_router is not None:
+            ctx.extras["llm_router"] = self._llm_router
+        if self._haki_brain is not None:
+            ctx.extras["haki_brain"] = self._haki_brain
+        if self._stt_engine is not None:
+            ctx.extras["stt_engine"] = self._stt_engine
+        if self._tts_engine is not None:
+            ctx.extras["tts_engine"] = self._tts_engine
+
+        # Inject the EXISTING conversation history (prior turns only — NOT the
+        # current message) so the chat handler can pass it to the LLM for
+        # running conversation memory.
+        ctx.extras["conversation_history"] = list(self._conversation_history)
 
         # ----------------------------------------------------------------
         # Phase 1 — Parallel enrichment: Mood | Language | Memory
@@ -307,12 +366,36 @@ class Orchestrator:
         logger.debug("Turn [%r]: shaping response via PersonaEngine", transcript[:40])
         shaped = await self._shape_response(raw_response, ctx)
 
+        # ----------------------------------------------------------------
+        # Persist this exchange into the running conversation history so the
+        # next turn has memory of it.  Bounded to the last 20 entries
+        # (10 user/assistant exchanges) to keep token usage in check.
+        # ----------------------------------------------------------------
+        self._conversation_history.append({"role": "user", "content": transcript})
+        self._conversation_history.append({"role": "assistant", "content": shaped})
+        self._conversation_history = self._conversation_history[-20:]
+
+        # Durably persist this exchange to the HAKI Brain (Obsidian vault +
+        # semantic index) so memory survives an app restart and the LLM can
+        # recall it across sessions.  Fire-and-forget so the durable write /
+        # embedding never delays the spoken response.  Best-effort.
+        if self._haki_brain is not None and hasattr(self._haki_brain, "log_conversation"):
+            try:
+                task = asyncio.ensure_future(
+                    self._haki_brain.log_conversation(transcript, shaped)
+                )
+                self._bg_tasks.add(task)
+                task.add_done_callback(self._bg_tasks.discard)
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("Orchestrator: scheduling log_conversation failed: %r", exc)
+
         return shaped
 
     async def stream_turn(
         self,
         transcript: str,
         audio_features: dict[str, Any] | None = None,
+        extras: dict[str, Any] | None = None,
     ) -> AsyncIterator[str]:
         """
         Execute one conversational turn and yield response tokens one at a
@@ -324,12 +407,21 @@ class Orchestrator:
         each token as it arrives.  The current stub yields the full shaped
         response as a single token.
 
+        Parameters
+        ----------
+        transcript : str
+            Final STT transcript.
+        audio_features : dict | None
+            Prosodic features for Mood_Detector.
+        extras : dict | None
+            Extra context passed through to capability handlers.
+
         Yields
         ------
         str
             Individual response tokens (words / subword pieces).
         """
-        shaped = await self.run_turn(transcript, audio_features)
+        shaped = await self.run_turn(transcript, audio_features, extras)
         # Yield word-by-word so TTS can start playback immediately
         # (Req 3.1 — streaming playback of earliest available words).
         for word in shaped.split():
@@ -358,6 +450,41 @@ class Orchestrator:
         coroutine as a Task so that ``cancel()`` can cancel it.
         """
         self._current_task = task
+
+    def reset_conversation(self) -> None:
+        """
+        Clear the running conversation history.
+
+        Use this to start a fresh conversation (e.g. on an explicit
+        "new conversation" command) without restarting the Core process.
+        """
+        self._conversation_history = []
+        logger.debug("Orchestrator.reset_conversation(): conversation history cleared")
+
+    def load_persistent_history(self, max_messages: int = 20) -> int:
+        """
+        Seed the running conversation history from the HAKI Brain.
+
+        Called once at startup so HAKI remembers what was being discussed in
+        previous sessions (cross-session memory).  Returns the number of
+        messages loaded.  Best-effort — any failure leaves history empty.
+        """
+        if self._haki_brain is None or not hasattr(
+            self._haki_brain, "load_recent_history"
+        ):
+            return 0
+        try:
+            recent = self._haki_brain.load_recent_history(max_messages=max_messages)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Orchestrator.load_persistent_history failed: %r", exc)
+            return 0
+        if recent:
+            self._conversation_history = list(recent)[-max_messages:]
+            logger.info(
+                "Orchestrator: loaded %d message(s) of cross-session history",
+                len(self._conversation_history),
+            )
+        return len(self._conversation_history)
 
     # ------------------------------------------------------------------
     # Private: parallel enrichment helpers
@@ -549,33 +676,126 @@ class Orchestrator:
 
     async def _handle_chat(self, ctx: TurnContext) -> str:
         """
-        Chat / general-response handler stub.
+        Chat / general-response handler.
 
-        A real implementation calls the LLM with the composed system prompt
-        (language constraints + persona + memory) and streams tokens back.
+        Uses the real LLMRouter (Groq → Gemini → OpenRouter → NIM → Ollama)
+        when wired in, with HAKI Brain context injected.  Falls back to the
+        stub when no router is configured.
         """
+        if self._llm_router is None:
+            # Stub fallback
+            lang_instruction = ctx.language_constraints.get("language_instruction", "")
+            memory_summary = (
+                f"[{len(ctx.memory_context)} memory notes available]"
+                if ctx.memory_context
+                else "[no memory context]"
+            )
+            return (
+                f"[LLM stub — chat] "
+                f"Transcript: {ctx.transcript!r} | "
+                f"{lang_instruction} | {memory_summary}"
+            )
+
+        # Build system prompt from persona + language constraints + memory
+        system_parts = []
+
+        # Persona identity
+        persona_ctx = PersonaContext(
+            mood_result=ctx.mood,
+            memory_context=None,
+        )
+        persona_prefix = self._persona_engine.shape("", persona_ctx)
+        if persona_prefix:
+            system_parts.append(persona_prefix)
+
+        # Language constraint
         lang_instruction = ctx.language_constraints.get("language_instruction", "")
-        memory_summary = (
-            f"[{len(ctx.memory_context)} memory notes available]"
-            if ctx.memory_context
-            else "[no memory context]"
+        if lang_instruction:
+            system_parts.append(lang_instruction)
+
+        # Memory context from vault
+        if ctx.memory_context:
+            memory_lines = [str(n) for n in ctx.memory_context[:5]]
+            system_parts.append(
+                "Relevant context from memory:\n" + "\n".join(memory_lines)
+            )
+
+        # HAKI Brain semantic context (wiki search)
+        if self._haki_brain is not None:
+            try:
+                brain_context = await asyncio.wait_for(
+                    self._haki_brain.search_and_format(ctx.transcript, k=3),
+                    timeout=2.0,
+                )
+                if brain_context:
+                    system_parts.append(brain_context)
+            except Exception:
+                pass
+
+        system_prompt = "\n\n".join(filter(None, system_parts))
+
+        # Determine if this is a large-context task
+        prefer_large = len(ctx.transcript) > 2000 or ctx.intent in (
+            Intent.RECALL, Intent.SCHEDULE
         )
-        return (
-            f"[LLM stub — chat] "
-            f"Transcript: {ctx.transcript!r} | "
-            f"{lang_instruction} | {memory_summary}"
+
+        response = await self._llm_router.chat(
+            ctx.transcript,
+            system_prompt=system_prompt,
+            prefer_large_context=prefer_large,
+            history=ctx.extras.get("conversation_history") or [],
         )
+        return response
 
     async def _handle_recall(self, ctx: TurnContext) -> str:
-        """Recall handler — surfaces memory notes related to the transcript."""
+        """Recall handler — searches vault memory + HAKI Brain."""
+        parts: list[str] = []
+
+        # Check HAKI Brain wiki first
+        if self._haki_brain is not None:
+            try:
+                brain_hits = await asyncio.wait_for(
+                    self._haki_brain.search(ctx.transcript, k=5),
+                    timeout=2.0,
+                )
+                if brain_hits:
+                    parts.append("**From my knowledge base:**")
+                    for hit in brain_hits[:3]:
+                        parts.append(f"- {hit['title']}: {hit['content'][:300]}")
+            except Exception:
+                pass
+
+        # Check MemoryBrain vault notes
         if ctx.memory_context:
-            notes_text = "; ".join(str(n) for n in ctx.memory_context)
-            return f"Here is what I remember: {notes_text}"
-        return "I don't have any relevant memories for that."
+            if parts:
+                parts.append("")
+            parts.append("**From my memory notes:**")
+            for note in ctx.memory_context[:3]:
+                note_text = getattr(note, "body", str(note))[:300]
+                parts.append(f"- {note_text}")
+
+        if not parts:
+            return "Mujhe is baare mein koi relevant memory nahi mili. Try asking me to remember something first!"
+
+        # Shape the recall response through the LLM if available
+        recall_text = "\n".join(parts)
+        if self._llm_router is not None:
+            return await self._llm_router.chat(
+                f"Based on this context, answer the question: {ctx.transcript}\n\nContext:\n{recall_text}",
+                system_prompt="You are HAKI. Summarise the relevant context concisely in Hinglish.",
+            )
+        return recall_text
 
     async def _handle_remember(self, ctx: TurnContext) -> str:
-        """Remember handler stub — would persist new information."""
-        return f"[Memory_Brain stub] Would store: {ctx.transcript!r}"
+        """Remember handler — stores fact in HAKI Brain wiki."""
+        if self._haki_brain is not None:
+            try:
+                page = await self._haki_brain.remember_fact(ctx.transcript)
+                return f"Yaad kar liya! '{page.title}' note bana diya apne knowledge base mein."
+            except Exception as exc:
+                logger.warning("HAKIBrain.remember_fact failed: %s", exc)
+
+        return f"Apni memory mein save kar liya: {ctx.transcript!r}"
 
     # ------------------------------------------------------------------
     # Private: persona shaping

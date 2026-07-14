@@ -30,7 +30,7 @@ let package = Package(
         // MARK: - Main app target
         .executableTarget(
             name: "HAKI",
-            dependencies: ["HAKIIPC"],
+            dependencies: ["HAKIIPC", "HAKIUI", "HAKIAudio", "HAKIPermissions"],
             path: "Sources/HAKI",
             swiftSettings: [
                 .define("DEBUG", .when(configuration: .debug))
@@ -50,7 +50,7 @@ let package = Package(
         ),
         .target(
             name: "HAKIOSActions",
-            dependencies: [],
+            dependencies: ["HAKIPermissions"],
             path: "Sources/Subsystems/OSActions"
         ),
         .target(
@@ -65,7 +65,7 @@ let package = Package(
         ),
         .target(
             name: "HAKIUI",
-            dependencies: [],
+            dependencies: ["HAKIIPC"],
             path: "Sources/Subsystems/UI"
         ),
         .target(
@@ -77,6 +77,16 @@ let package = Package(
             name: "HAKITextInput",
             dependencies: [],
             path: "Sources/Subsystems/TextInput"
+        ),
+        .target(
+            name: "HAKIControl",
+            dependencies: ["HAKIOSActions", "HAKIPermissions"],
+            path: "Sources/Subsystems/Control"
+        ),
+        .target(
+            name: "HAKIScheduler",
+            dependencies: ["HAKIOSActions"],
+            path: "Sources/Subsystems/Scheduler"
         ),
 
         // MARK: - Test targets
@@ -91,7 +101,9 @@ let package = Package(
                 "HAKIIPC",
                 "HAKIUI",
                 "HAKIStore",
-                "HAKITextInput"
+                "HAKITextInput",
+                "HAKIControl",
+                "HAKIScheduler"
             ],
             path: "Tests/HAKITests"
         ),
@@ -107,6 +119,8 @@ let package = Package(
                 "HAKIUI",
                 "HAKIStore",
                 "HAKITextInput",
+                "HAKIControl",
+                "HAKIScheduler",
                 .product(name: "SwiftCheck", package: "SwiftCheck")
             ],
             path: "Tests/HAKIPropertyTests"

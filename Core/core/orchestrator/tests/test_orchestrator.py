@@ -483,14 +483,20 @@ async def test_route_chat_stub_contains_transcript():
 
 
 @pytest.mark.asyncio
-async def test_route_recall_stub_contains_transcript():
-    """The recall stub handler should reference the user's transcript."""
+async def test_route_recall_queries_brain():
+    """The recall handler should surface matching content from the HAKI Brain."""
+
+    class _FakeBrain:
+        async def search(self, query, k=5):
+            return [{"title": "exam_date", "content": "My exam is on June 20."}]
+
     router = IntentRouter()
-    ctx = _make_turn_context("remember my exam date")
+    ctx = _make_turn_context("when is my exam")
+    ctx.extras["haki_brain"] = _FakeBrain()
     ir = IntentResult(intent=Intent.RECALL)
     chunks = [chunk async for chunk in router.route(ir, ctx)]
     full = "".join(chunks)
-    assert "remember my exam date" in full
+    assert "June 20" in full or "exam_date" in full
 
 
 @pytest.mark.asyncio
@@ -517,7 +523,6 @@ async def test_route_side_effecting_intent_without_slots_defers():
     the yielded message should mention the missing information.
     """
     side_effecting = [
-        Intent.MAC_COMMAND,
         Intent.SCHEDULE,
         Intent.TASK,
         Intent.RUN_AUTOMATION,

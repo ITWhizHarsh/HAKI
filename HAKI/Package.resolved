@@ -10,30 +10,12 @@
       }
     },
     {
-      "identity" : "csqlite",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/stephencelis/CSQLite",
-      "state" : {
-        "revision" : "bdb5580e54cdf49251b365ea34e2651199473240",
-        "version" : "3.50.4"
-      }
-    },
-    {
       "identity" : "filecheck",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/llvm-swift/FileCheck.git",
       "state" : {
         "revision" : "f7c5f1a9479b33a876a6f5632ca2b92a7ce4b667",
         "version" : "0.2.6"
-      }
-    },
-    {
-      "identity" : "sqlcipher.swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/sqlcipher/SQLCipher.swift",
-      "state" : {
-        "revision" : "07bf6bc2191a063d6f1e7c3b5f276a3fadfe36b7",
-        "version" : "4.16.0"
       }
     },
     {

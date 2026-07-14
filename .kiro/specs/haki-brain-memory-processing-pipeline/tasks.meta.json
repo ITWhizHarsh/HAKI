@@ -1,0 +1,773 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Set up dependencies and configuration": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904633713
+      },
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904675511
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782910095091
+      }
+    ],
+    "2.1 Create `FastPassStatus` enum, `Entity` and `FastPassResult` dataclasses": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904633963
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782910095422
+      }
+    ],
+    "2.2 Implement `FastPassExtractor` with lazy `spaCy` loading (`_load_spacy`),": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634025
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782910106331
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782910445447
+      }
+    ],
+    "2.3 Implement `_entities_to_markdown()` helper for pre-formatted note bodies": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634076
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782910451973
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782910540487
+      }
+    ],
+    "3. Checkpoint - ensure Fast Pass tests pass": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634128
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782910595877
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782911299298
+      }
+    ],
+    "4.1 Create `MemoryNotePath` dataclass, `_slugify()`, and": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634191
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782911322825
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782911601899
+      }
+    ],
+    "4.2 Implement `MemoryNoteWriter.write_fast_pass_note()` with provenance-link": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634275
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782911624519
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782912601537
+      }
+    ],
+    "4.3 Implement `MemoryNoteWriter.write_heavy_pass_note()` with provenance-link": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634323
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782912607608
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782912743692
+      }
+    ],
+    "4.4 Implement `_write_atomic()` (temp file + `fsync` + `rename`, cleanup temp": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634359
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782912749303
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782913275520
+      }
+    ],
+    "4.5 Implement duplicate-link detection so the writer never writes two links of": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634457
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782913280907
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782913672186
+      }
+    ],
+    "5. Checkpoint - ensure MemoryNoteWriter tests pass": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634487
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782913677992
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782913839172
+      }
+    ],
+    "6.1 Create SQLite-backed `ProcessTracker` with `processed_logs` table (WAL mode),": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634524
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782913847967
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782915771917
+      }
+    ],
+    "6.2 Implement `get_unprocessed_conversations(cutoff_date, conversations_dir)`": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634557
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782915777482
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782931736940
+      }
+    ],
+    "7.1 Add `prefer_local: bool = False` parameter to `chat()` and `stream_chat()`": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634586
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782913848470
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782915100978
+      }
+    ],
+    "7.2 Update `_routing_order()` to return `[LLMTier.LOCAL_MLX]` exclusively when": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634625
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782915103945
+      }
+    ],
+    "7.3 Update `_stream_local_mlx()` to accept `prefer_standby` and try": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634653
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782915104630
+      }
+    ],
+    "8.1 Create `HeavyPassStatus` enum and `HeavyPassResult` dataclass": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634686
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782931744221
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782931872535
+      }
+    ],
+    "8.2 Implement ChromaDB top-3 semantic query step, selecting the top-1 result as": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634718
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782931886279
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782932060214
+      }
+    ],
+    "8.3 Implement evolutionary prompt (`_EVOLUTIONARY_PROMPT`, `_HEAVY_PASS_SYSTEM`)": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634753
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782932073858
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782932223621
+      }
+    ],
+    "8.4 Implement `extract()`: call `LLMRouter.chat(prefer_local=True)` wrapped in": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634796
+      },
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782932233078
+      },
+      {
+        "executionId": "c5453979-d3e1-458b-9bc9-961e13bc6e7f",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782963090333
+      }
+    ],
+    "9. Checkpoint - ensure Heavy Pass and LLMRouter tests pass": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634825
+      },
+      {
+        "executionId": "c5453979-d3e1-458b-9bc9-961e13bc6e7f",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782963101332
+      },
+      {
+        "executionId": "c5453979-d3e1-458b-9bc9-961e13bc6e7f",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782964913766
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972618110
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972658725
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782975998934
+      }
+    ],
+    "10.1 In `HAKIBrain.__init__()`, instantiate `FastPassExtractor` and": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634852
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782965010651
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782965203642
+      }
+    ],
+    "10.2 Implement `_check_low_memory()` using `psutil.virtual_memory().available`,": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634880
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782965216067
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782965424549
+      }
+    ],
+    "10.3 Rewrite `_ingest_file()` body: read content, run `FastPassExtractor`, on": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634910
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782965433136
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782967351929
+      }
+    ],
+    "10.4 In the Heavy Pass branch, call `_check_low_memory()` before constructing": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634943
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782967352650
+      }
+    ],
+    "10.5 Implement `_get_processed_dest()` to generate a collision-safe destination": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904634974
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782967353601
+      }
+    ],
+    "10.6 Ensure filesystem move failures after successful writes are caught,": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635006
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782967354582
+      }
+    ],
+    "10.7 Wrap each `_ingest_file()` call site (`ingest_pending()`) in a": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635035
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782967355646
+      }
+    ],
+    "11. Checkpoint - ensure HAKIBrain ingestion tests pass": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635067
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782967362893
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782970940276
+      }
+    ],
+    "12.1 Implement `process_pending_conversations()`: compute cutoff as": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635094
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782970948395
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782972046978
+      }
+    ],
+    "12.2 Implement `_process_conversation_log()`: apply Fast Pass then Heavy Pass": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635126
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782972047269
+      }
+    ],
+    "13. Checkpoint - ensure conversation processing tests pass": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635172
+      },
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782972058139
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972618188
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972672059
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976000436
+      }
+    ],
+    "14.1 Implement `PipelineScheduler.__init__()` and `start()` using": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635208
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972618280
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972673161
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976002380
+      }
+    ],
+    "14.2 Implement `_raw_job()` and `_conv_job()` wrappers with an in-flight guard": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635237
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972618314
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972674634
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782975999802
+      }
+    ],
+    "14.3 Implement `_parse_time()` to parse `HH:MM`, falling back to the default": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635270
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972618349
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972675699
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976009684
+      }
+    ],
+    "15.1 Implement vault path startup validation in `HAKIBrain.init()`: abort with": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635303
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972618390
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972676676
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976001398
+      }
+    ],
+    "15.2 Implement `_wait_for_live_turn()` and call it before Vault-modifying": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635336
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972618435
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976016669
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976373372
+      }
+    ],
+    "16.1 Replace `haki_brain.start_watching()` with construction and `start()` of": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635388
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972618476
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976018045
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976373808
+      }
+    ],
+    "16.2 Ensure `Core/.env` validation failure (from task 15.1) prevents the": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635426
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972618514
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976019520
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976375217
+      }
+    ],
+    "17. Final checkpoint - ensure full pipeline test suite passes": [
+      {
+        "executionId": "2cd7e1f6-a176-42c1-aeae-ce399934a845",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782904635466
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782972618552
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976382134
+      },
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782977262611
+      }
+    ],
+    "2. Implement `FastPassExtractor` (`core/memory/fast_pass.py`)": [
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782910540557
+      }
+    ],
+    "4. Implement `MemoryNoteWriter` and link validation (`core/memory/memory_note_writer.py`)": [
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782913672293
+      }
+    ],
+    "7. Add `prefer_local` flag to `LLMRouter` (`core/model_provider/llm_router.py`)": [
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782915104685
+      }
+    ],
+    "6. Implement `ProcessTracker` (`core/memory/process_tracker.py`)": [
+      {
+        "executionId": "88a01170-e279-4261-ab39-ebc359ec19a5",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782931737005
+      }
+    ],
+    "8. Implement `HeavyPassExtractor` (`core/memory/heavy_pass.py`)": [
+      {
+        "executionId": "c5453979-d3e1-458b-9bc9-961e13bc6e7f",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782963090445
+      }
+    ],
+    "10. Refactor `HAKIBrain._ingest_file()` to hybrid routing (`core/memory/haki_brain.py`)": [
+      {
+        "executionId": "e7b3ab34-bf0d-40b0-b154-a2d69f8311f7",
+        "chatSessionId": "sess_b5e52705-e3df-40ae-8d6c-1fbc763b1b73",
+        "timestamp": 1782967355681
+      }
+    ],
+    "14. Implement `PipelineScheduler` (`core/memory/pipeline_scheduler.py`)": [
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976009756
+      }
+    ],
+    "15. Wire startup validation and live-turn deferral into `HAKIBrain`": [
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976373521
+      }
+    ],
+    "16. Wire `PipelineScheduler` into `haki_core_service.py`": [
+      {
+        "executionId": "ebc8cab5-8bd6-4244-be59-24a33b27b728",
+        "chatSessionId": "sess_3af284a3-6ad6-4c89-a304-b2f063efd51d",
+        "timestamp": 1782976375251
+      }
+    ]
+  }
+}

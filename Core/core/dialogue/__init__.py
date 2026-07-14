@@ -9,6 +9,20 @@ Design reference: Dialogue_Manager, Agentic Execution Engine.
 Requirements: 23.
 """
 
-from .dialogue_manager import SlotFillResult, DialogueManager
+from .dialogue_manager import (
+    SlotFillResult,
+    MemoryFillResult,
+    PausePoint,
+    DeclineResult,
+    CandidatePresentation,
+    DialogueManager,
+)
 
-__all__ = ["SlotFillResult", "DialogueManager"]
+__all__ = [
+    "SlotFillResult",
+    "MemoryFillResult",
+    "PausePoint",
+    "DeclineResult",
+    "CandidatePresentation",
+    "DialogueManager",
+]

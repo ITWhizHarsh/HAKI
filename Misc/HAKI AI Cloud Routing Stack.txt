@@ -1,0 +1,321 @@
+﻿Architectural Blueprint for HAKI: A Multi-Tiered, Ultra-Low Latency, Multi-Modal macOS Personal AI Assistant
+The design of a real-time, context-aware, voice-driven assistant on macOS requires an infrastructure that balances extreme speed, heavy document ingestion capabilities, and strict budget constraints. The system, designated HAKI (Heuristic Augmented Knowledge Interface), must operate within a strict 300ms Time-to-First-Audio (TTFA) latency budget to maintain conversational fluidness. Mathematically, this end-to-end latency budget is modeled as:
+  
+
+To clear this 300ms threshold, standard cloud and GPU architectures are insufficient. The conversational loop demands custom accelerator hardware, intelligent multi-model routing gateways, and specialized local-cloud hybrid speech pipelines. This report delivers an exhaustive technical comparison and architectural blueprint for HAKI's primary infrastructure layers.
+The Ultra-Low Latency Conversational Brain
+The core conversational loop of HAKI requires an LLM engine capable of processing prompt inputs and initiating response streaming under 100ms.1 During token generation on traditional GPU clusters, the hardware must load the entire model's weights from High Bandwidth Memory (HBM) into compute cores for every single forward pass.1 For a 70B parameter model, this requires moving approximately 140GB of data per token, capping performance at the physical bandwidth limits of the GPU.1
+To bypass this memory bandwidth wall, custom silicon architectures keep model weights resident directly within on-chip Static Random-Access Memory (SRAM).1 Groq’s Language Processing Unit (LPU) and Cerebras’s Wafer-Scale Engine (WSE-3) eliminate external DRAM transfers entirely.1 Groq achieves this by mapping model execution across networked LPUs, while Cerebras utilizes a single, massive wafer-scale chip containing 900,000 cores and sufficient on-chip memory to store massive models natively.1
+The table below compares the performance, pricing, and free-tier runways of specialized low-latency inference providers against traditional GPU-based API hosts:
+
+
+Provider
+	Top Models Hosted
+	Output Throughput (TPS)
+	Time-to-First-Token (TTFT)
+	Input Price (per 1M Tokens)
+	Output Price (per 1M Tokens)
+	Free-Tier Quota & Limits
+	Credit Card Required?
+	Cerebras
+	Qwen3 235B, Llama 4 Scout, Llama 3.1 8B 2
+	~2,100 to 3,000 2
+	80ms – 150ms 1
+	Subscription-based / Varies 3
+	Subscription-based / Varies 3
+	1,000,000 tokens/day 2
+	No 2
+	Groq
+	Llama 4 Maverick, Llama 3.3 70B, Qwen3 32B 4
+	~394 to 476 1
+	<100ms 1
+	$0.11 (Scout) to $0.59 (70B) 4
+	$0.34 (Scout) to $0.79 (70B) 4
+	500K – 1M tokens/day 2
+	No 2
+	SambaNova
+	Llama 3.1 70B, DeepSeek R1 2
+	High 5
+	Low 6
+	Enterprise-tiered 5
+	Enterprise-tiered 5
+	~100K tokens (one-time promo) 2
+	No 2
+	Together AI
+	DeepSeek R1, Qwen 2.5 7B, Llama 3.3 70B 4
+	~100 to 150 5
+	200ms – 400ms 5
+	$0.30 (7B) to $0.88 (70B) 4
+	$0.30 (7B) to $0.88 (70B) 4
+	None ($5 minimum deposit) 2
+	Yes 2
+	Independent evaluations show that Cerebras delivers the highest sustained throughput in the industry, executing models like Qwen3 235B at approximately 900 tokens per second and Llama 3.1 8B at over 2,100 tokens per second.2 This raw throughput is highly valuable for processing complex chain-of-thought iterations.7 However, Cerebras has transitioned its public pricing away from open per-token APIs toward subscription tiers.3
+For HAKI's primary conversational brain, Groq presents the most reliable free developer runtime.2 Groq offers a generous daily allocation of up to 1,000,000 tokens across Llama 4 Scout and Llama 3.3 70B without requiring a credit card, maintaining a sub-100ms TTFT under low concurrency.1
+An important technical trade-off lies in model precision.7 Groq's LPU architecture is optimized for 8-bit quantization; running full 16-bit precision models natively is significantly slower on their hardware.7 As a result, many models deployed on Groq trade off a degree of accuracy for raw speed.7 Cerebras, by contrast, supports native 16-bit precision in hardware, ensuring maximum response accuracy for highly complex linguistic operations.7
+The Heavy Context and Vision Brain
+To ingest HAKI's heavy contextual demands—which include reading an entire local Obsidian Markdown vault, parsing massive multi-page PDFs, and analyzing desktop screen captures 8—the architecture requires a secondary model capable of handling a 1,000,000+ token context window.9
+Google AI Studio remains the leading zero-cost developer platform for processing massive datasets.2 However, Google's free-tier limits underwent a tightening in late 2025.9 Free access is now strictly limited to the Flash and Flash-Lite model families, while Pro models have been moved behind active billing.8
+The table below documents the exact 2026 free-tier limits and capabilities for Google AI Studio's models:
+
+
+Model Group
+	Requests Per Minute (RPM)
+	Tokens Per Minute (TPM)
+	Requests Per Day (RPD)
+	Max Context Window
+	Sandboxed Python Execution
+	Gemini 3 Flash
+	10 8
+	250,000 8
+	1,500 8
+	1,000,000 tokens 8
+	Yes 8
+	Gemini 3.1 Flash-Lite
+	15 8
+	250,000 8
+	1,000 8
+	1,000,000 tokens 9
+	Yes 8
+	Gemini 2.0 Flash
+	15 8
+	1,000,000 8
+	1,500 8
+	1,000,000 tokens 8
+	Yes 8
+	Gemini 2.5 Pro
+	5 (Trial Only) 8
+	150,000 8
+	50 (Trial Only) 8
+	1,000,000 tokens 9
+	Yes 8
+	These free allowances apply strictly as long as billing remains disabled on the Google Cloud Project.10 This introduces a major operational risk known as the "billing catch": the moment cloud billing is enabled to access paid tiers (such as Tier 1 or Tier 2), the free-tier allowance for that project is completely removed.10 Every subsequent API call is billed from the first token, even those that would have comfortably fit within the free quota.10
+To mitigate this risk, the HAKI architecture must implement a dual-project isolation strategy 10:
+* Project A (Billing Disabled): Serves as HAKI's primary sandbox, utilizing Gemini 2.0 Flash and Gemini 3.1 Flash-Lite for routine vault RAG and local PDF summarization entirely within the free 1,500 RPD and 1,000,000 TPM allowances.8
+* Project B (Billing Enabled): Configured as a production fallback linked to active payment profiles, with strict budget alerts set at a low threshold to handle extreme usage spikes.10
+Alternative model APIs fail to compete on this heavy context tier. For instance, Anthropic's Claude 4.5 Haiku is priced at $5.00 per million input tokens, lacks a direct free tier, and caps its context window at 200,000 tokens.4 DeepSeek V3.2 is highly cost-effective at $0.28 per million output tokens 4 but lacks the native multi-modal ingestion pipeline of Gemini, which natively processes video, audio spectrograms, and multi-page document images without requiring third-party parsing tools.8
+API Gateways and Unified Routers
+To prevent application failure when Groq's aggressive rate limits are hit during conversation, HAKI must run a local gateway layer to coordinate automated model fallbacks.11
+An evaluation of leading gateway architectures reveals distinct design philosophies:
+* OpenRouter: Serves as a managed, SaaS-hosted marketplace giving access to over 650 models.11 It offers a free tier supporting rotating models like DeepSeek R1 and Qwen3 Coder 480B.2 These work by dynamically routing requests to subsidized backend hosts.11 However, OpenRouter cannot be self-hosted, introduces external platform dependencies, and adds network transit hops that can degrade the tight 300ms conversational latency budget.11
+* Bifrost: A high-performance, open-source gateway compiled in Go.11 In benchmark tests under continuous loads of 5,000 requests per second, Bifrost introduces only 11 microseconds of processing overhead.13 It acts as a transparent, drop-in replacement for standard SDKs and includes advanced features like semantic caching and native Model Context Protocol (MCP) gateways.13 It is optimized for high-concurrency enterprise applications.13
+* LiteLLM: An open-source, Python-based proxy server and SDK.11 LiteLLM wraps over 100 providers behind an OpenAI-compatible API.15 While Python's Global Interpreter Lock (GIL) and asyncio overhead limit its single-process throughput—introducing about 8ms of latency at high request volumes—this overhead is negligible for a single-user desktop application.13 Its ease of installation, Python ecosystem compatibility, and robust fallback mechanics make it the ideal gateway for HAKI.14
+LiteLLM handles failovers gracefully by managing rate limit errors (HTTP 429), connection timeouts, and server errors (5xx).16 The following production-grade config.yaml manages automatic, zero-latency transitions between Groq, Cerebras, and a locally hosted Ollama backup:
+
+
+
+
+
+
+YAML
+model_list:
+ - model_name: haki-conversational-brain
+   litellm_params:
+     model: groq/llama-3.3-70b-versatile
+     api_key: os.environ/GROQ_API_KEY
+     rpm: 1000
+ - model_name: haki-conversational-brain
+   litellm_params:
+     model: cerebras/llama-4-scout
+     api_key: os.environ/CEREBRAS_API_KEY
+     rpm: 1800
+ - model_name: haki-conversational-brain
+   litellm_params:
+     model: ollama/llama3.1:8b
+     api_base: http://localhost:11434
+     api_key: "local_bypass"
+
+router_settings:
+ num_retries: 0  # Force immediate fallback execution upon encountering a 429 or 5xx error
+ cooldown_time: 30  # Temporarily remove a failing provider from the pool for 30 seconds
+ timeout: 3.5  # Trigger fallback if primary provider latency exceeds 3.5 seconds
+ fallbacks:
+   - haki-conversational-brain: ["cerebras/llama-4-scout", "ollama/llama3.1:8b"]
+
+This configuration is executed locally on HAKI's macOS Python backend via the standard OpenAI SDK, routing requests transparently through the LiteLLM proxy:
+
+
+
+
+
+
+Python
+from openai import OpenAI
+
+# Direct client to the locally running LiteLLM proxy instance
+client = OpenAI(
+   base_url="http://localhost:4000",
+   api_key="sk-haki-master-bypass"  # Master key defined in LiteLLM environment
+)
+
+try:
+   # Under normal operation, this request routes to Groq (LPU)
+   # If Groq is rate-limited, LiteLLM instantly reroutes to Cerebras, then Ollama
+   response = client.chat.completions.create(
+       model="haki-conversational-brain",
+       messages=,
+       extra_body={
+           "mock_testing_fallbacks": False  # Toggle to True during testing to force fallback execution
+       }
+   )
+   print(response.choices.message.content)
+except Exception as e:
+   print(f"Inference pipeline completely exhausted: {e}")
+
+The Voice Layer: STT & TTS Fallback
+When local hardware is heavily loaded, HAKI must route speech-to-text (STT) and text-to-speech (TTS) tasks to low-latency cloud fallback services.17
+Speech-to-Text (STT) Infrastructure
+To achieve sub-300ms latency, the streaming transcription layer must operate continuously.18 Deepgram Nova-3 serves as the standard for general audio processing, delivering a 5.26% Word Error Rate (WER) in English and transcribing batch files in approximately 1/120th of real-time.18
+However, for real-time conversational agents, Deepgram's Flux is the preferred model.20 Traditional streaming pipelines rely on external Voice Activity Detection (VAD) algorithms, which introduce latency by waiting for a period of silence before chunking audio and calling the transcriber.18 Flux incorporates model-integrated end-of-turn detection, analyzing conversation flow directly to determine when a speaker has finished speaking rather than just pausing for breath.18 This cuts conversational turn-around latency by up to 54% compared to standard streaming pipelines.18
+For scenarios requiring extensive language coverage, Gladia's Solaria model serves as a strong alternative, delivering partial transcription returns in less than 103ms with native support for code-switching across over 100 languages.20
+Text-to-Speech (TTS) Landscape
+The cloud speech synthesis market has shifted toward models optimized for voice agent performance.23 The table below compares these platforms across key latency, quality, pricing, and free-tier metrics:
+
+
+TTS Platform
+	Latency (TTFB)
+	Voice Quality (MOS)
+	Pricing (per 1M Characters)
+	Free-Tier Developer Quota
+	Hinglish & Indian Accents
+	Cartesia Sonic 3.5
+	~80ms (Turbo) to 90ms (Sonic 3.5) 23
+	~4.5 to 4.7 24
+	$40 (Turbo) to $80 (Sonic 3.5) 24
+	Generous free developer tier 25
+	Native single-pass model-level code-switching 26
+	ElevenLabs Flash v2.5
+	~75ms 24
+	~4.5 24
+	~$180 24
+	10,000 characters per month 27
+	Supported (32 languages) 24
+	ElevenLabs Eleven v3
+	~275ms 24
+	~4.8 24
+	~$180 24
+	10,000 characters per month 27
+	Expressive regional accents 28
+	PlayHT / PlayAI
+	Deprecated 23
+	Deprecated 23
+	N/A 23
+	None (Shut down) 23
+	N/A 23
+	Sarvam AI (Bulbul V3)
+	~250ms 29
+	Natural 29
+	Rs. 30 per 10K Chars (~$36/1M) 29
+	1,000 credits free 29
+	Native Hinglish/Indian languages 29
+	Important Integration Advisory: Following Meta's acquisition of PlayHT in July 2025 and its rebranding to PlayAI, the platform is being actively wound down.23 Developers must treat existing PlayHT integrations as high deprecation risks and avoid them in new builds.23
+Hinglish Optimization and Regional Network Topology
+A major challenge for speech synthesis in the Indian market is handling Hinglish, where speakers fluidly blend Hindi and English syntax, vocabulary, and phonemes within a single sentence.30 Traditional TTS platforms handle this by splitting text into separate Hindi and English segments and routing them to distinct monolingual models.29 This approach introduces pauses, mechanical voice shifts, and accent inconsistencies at language boundaries.29
+Cartesia (using specialized localized voices like Ayush and Mihir) 26 and Sarvam AI (using the Bulbul V3 model) 29 address this by managing code-switching directly at the model level.26 When processing a Hinglish sentence, the model generates audio in a single pass, ensuring natural intonation, smooth transitions, and accurate pronunciation of Indian names and phone numbers without drops or pauses.26
+To maintain a sub-300ms latency budget, the network topology must avoid international routing loops.31 Traditional setups often route voice data through multiple geographic regions, adding substantial latency 31:
+  
+
+This multi-continent loop introduces over 1,500ms of network transit latency, causing conversation pacing to feel sluggish.31
+To address this, Cartesia has established dedicated local infrastructure in India, supported by a strategic partnership with Blue Machines AI.32 This setup hosts voice processing models directly within a Bengaluru datacenter, providing local data residency and reducing network round-trip times (RTT) within India to less than 15ms.32 This local hosting is a critical technical requirement for keeping HAKI's voice pipeline under the 300ms limit.32
+Local Hardware Fallback Execution
+When offline or under heavy system loads, HAKI should fall back to on-device processing.17 On Apple Silicon Macs, the C/C++ port whisper.cpp leverages hardware acceleration via the Metal GPU backend or CoreML.17
+Using the ggml-base.en or ggml-small.en models, the system can run transcription locally.17 To minimize latency, the default audio context window (  ) should be reduced from 1500 (~30 seconds of audio) to 750 (~15 seconds).34 This optimization cuts the encoder's computational processing time in half (from ~1000ms to ~500ms) with negligible impact on short conversational accuracy, enabling fast, offline voice processing.34
+Trending Infrastructure and Cloud Credit Promotions
+For early-stage development, HAKI can optimize its operational runway by utilizing active developer promotions and credit programs:
+* IBM Cloud Infrastructure Credits: Running through December 31, 2026, developers can claim up to $1,000 in credits (valid for 120 days) for VPC virtual private servers, load balancers, and block storage.35 Additionally, the promo code GPU4YOU provides a 50% discount on NVIDIA L40s, A100s, and Intel Gaudi 3 accelerators (valid through June 30, 2026).35 The promo code TRYCONTAINERS provides a 50% discount for six months on IBM Kubernetes and Code Engine workloads.35
+* SkillBoss Gateway Credits: Developers can sign up to receive $2 in free starter credits without requiring a credit card.27 This gateway provides access to over 100 models, including Claude 4.5 Sonnet, GPT-5, and DeepSeek R1.27
+* Microsoft AI Skills Fest 2026: Running through June 12, 2026, developers who complete an unmodified skilling playlist on AI Skills Navigator receive a free exam voucher for professional Microsoft AI certifications.36
+* Hyperscaler Startup Programs: Startups can access major promotional credits, including up to $350,000 on Google Cloud (usable on H100s and TPU v5e instances), $150,000 on Microsoft Founders Hub (ND A100 instances), and $100,000 on AWS Startups.37
+* Modal Serverless GPU Program: Modal provides $30/month in ongoing free compute credits, useful for running on-demand serverless GPU inference tests.37
+Recommended HAKI Cloud Routing Stack
+To meet the strict 300ms TTFA budget and ensure high availability, the following architectural stack is recommended for HAKI's deployment:
+
+
+
+
+
+
+                  ┌─────────────────────────────────┐
+                 │    User Voice Input on macOS    │
+                 └────────────────┬────────────────┘
+                                  │
+                                  ▼
+                 ┌─────────────────────────────────┐
+                 │   Deepgram Flux Streaming STT   ├─► Local fallback: whisper.cpp (audio_ctx=750)
+                 └────────────────┬────────────────┘
+                                  │ (Text Transcript)
+                                  ▼
+                 ┌─────────────────────────────────┐
+                 │     Local LiteLLM Proxy         │
+                 └────────────────┬────────────────┘
+                                  │
+                    ┌─────────────┴─────────────┐
+                    ▼                           ▼ (If Rate-Limited)
+       ┌─────────────────────────┐ ┌─────────────────────────┐
+       │       Groq LPU          │ │      Cerebras WSE       │
+       │    (Llama 3.3 70B)      │ │   (Llama 4 Scout 16B)   │
+       └────────────┬────────────┘ └────────────┬────────────┘
+                    │                           │
+                    └─────────────┬─────────────┘
+                                  │ (Response Text Stream)
+                                  ▼
+                 ┌─────────────────────────────────┐
+                 │    Cartesia Sonic 3.5 TTS       │
+                 │   (Bengaluru Blue Machines)     │
+                 └────────────────┬────────────────┘
+                                  │
+                                  ▼
+                 ┌─────────────────────────────────┐
+                 │  Synthesized Audio Played on Mac│
+                 └─────────────────────────────────┘
+
+1. Conversational Engine Selection
+* Primary Engine: Deploy Groq's API hosting Llama 3.3 70B.1 Groq delivers a sub-100ms TTFT and supports up to 1,000,000 free tokens per day, providing a fast and cost-effective conversational experience.1
+* Fallback Engine: Configure Cerebras (running Llama 4 Scout) as the secondary provider.2 This provides a fallback of up to 3,000 tokens per second at full 16-bit precision, ensuring high accuracy when Groq limits are exceeded.1
+2. Context Ingestion Layer
+* Model Selection: Route heavy vault ingestion and screen captures to Gemini 2.0 Flash in Google AI Studio.8 This model handles a 1,000,000-token context window and provides up to 1,500 requests per day under the free tier.8
+* Project Isolation: Deploy using two distinct projects.10 Keep Project A strictly billing-disabled to preserve free-tier access, and use Project B (billing enabled) as a secondary gateway path for handling volume spikes.10
+3. API Gateway Integration
+* Configuration: Run LiteLLM as a local Python-based daemon on macOS.14 Configure it with num_retries: 0 and aggressive timeouts (3.5 seconds) to ensure silent, instant failovers without degrading conversation pacing.38
+4. Audio Processing Layer
+* Speech-to-Text (STT): Deploy Deepgram Flux to handle streaming audio.18 Its model-integrated end-of-turn detection manages conversation flow natively, avoiding the latency overhead of traditional VAD systems.18
+* Text-to-Speech (TTS): Use Cartesia Sonic 3.5 via the Bengaluru Blue Machines hosting endpoint.23 This setup provides native Hinglish code-switching and minimizes network RTT by keeping voice synthesis entirely within India.26 Ensure that deprecated PlayHT endpoints are excluded from the pipeline to avoid integration failures.23
+Works cited
+1. Fastest LLM Inference Platform Comparison: Groq vs Cerebras vs SambaNova vs GMI Cloud, accessed on June 11, 2026, https://www.gmicloud.ai/en/blog/fastest-llm-platform-compare
+2. AI Inference Providers 2026: Free Tier Deep-Dive for CTOs and ..., accessed on June 11, 2026, https://belski.me/blog/ai_inference_providers_2026_free_tier_deep_dive/
+3. AI Inference API Providers Compared (2026) - Infrabase.ai, accessed on June 11, 2026, https://infrabase.ai/blog/ai-inference-api-providers-compared
+4. LLM API Comparison 2026: Pricing, Speed, Features | Every Provider - Morph, accessed on June 11, 2026, https://www.morphllm.com/llm-api
+5. Lowest Latency AI Inference Providers for Real-Time - GMI Cloud, accessed on June 11, 2026, https://www.gmicloud.ai/en/blog/lowest-latency-ai-inference-providers-for-real-time
+6. Cerebras, Groq And SambaNova Line Up To Compete With Nvidia - Cambrian AI Research, accessed on June 11, 2026, https://cambrian-ai.com/cerebras-groq-and-sambanova-line-up-to-compete-with-nvidia/
+7. Cerebras CS-3 vs. Groq LPU, accessed on June 11, 2026, https://www.cerebras.ai/blog/cerebras-cs-3-vs-groq-lpu
+8. Gemini API Free Tier 2026: Limits, Quotas, and More - PE Collective, accessed on June 11, 2026, https://pecollective.com/tools/gemini-free-tier-guide/
+9. Gemini API Rate Limits 2026: Complete Per-Tier Guide with All Models, accessed on June 11, 2026, https://www.aifreeapi.com/en/posts/gemini-api-rate-limits-per-tier
+10. Gemini API Free Tier Limits 2026: RPM, RPD & TPM by Model | UsageBox, accessed on June 11, 2026, https://usagebox.com/articles/gemini-api-billing-free-tier-confusion
+11. OpenRouter vs LiteLLM vs Bifrost: AI Gateway Comparison - Maxim AI, accessed on June 11, 2026, https://www.getmaxim.ai/articles/openrouter-vs-litellm-vs-bifrost-ai-gateway-comparison/
+12. OpenRouter vs LiteLLM: when to use one over the other - Merge.dev, accessed on June 11, 2026, https://www.merge.dev/blog/litellm-vs-openrouter
+13. Top 5 LLM Gateways in 2026: A Production-Ready Comparison - Maxim AI, accessed on June 11, 2026, https://www.getmaxim.ai/articles/top-5-llm-gateways-in-2026-a-production-ready-comparison/
+14. Bifrost vs LiteLLM: Choosing the Right AI Gateway - Truefoundry, accessed on June 11, 2026, https://www.truefoundry.com/blog/bifrost-vs-litellm
+15. Stop Juggling LLM APIs: 8 Gateways Ranked 2026 | TECHSY, accessed on June 11, 2026, https://techsy.io/en/blog/best-llm-gateway-tools
+16. Configure LiteLLM Model Group Fallbacks for Rate Limit Resilience · Issue #25080 - GitHub, accessed on June 11, 2026, https://github.com/BerriAI/litellm/issues/25080
+17. Building a Local Voice AI Stack: Whisper + Ollama + Kokoro TTS on Apple Silicon, accessed on June 11, 2026, https://dev.to/xadenai/building-a-local-voice-ai-stack-whisper-ollama-kokoro-tts-on-apple-silicon-eo0
+18. Best Speech-to-Text APIs in 2026: A Comprehensive Comparison Guide - Deepgram, accessed on June 11, 2026, https://deepgram.com/learn/best-speech-to-text-apis-2026
+19. Deepgram Nova-3 Review: Is It Still the Fastest STT API in 2026? - TalkFlow Transcriber, accessed on June 11, 2026, https://transcriber.talkflowai.com/blog/deepgram-nova-3-review-benchmarks-pricing
+20. Deepgram Review 2026: Features, Pricing & Best Alternative - Gladia, accessed on June 11, 2026, https://www.gladia.io/blog/deepgram-review
+21. Deepgram Review 2026: Accuracy, Features, Voice Agents and Alternatives - DIY AI, accessed on June 11, 2026, https://diyai.io/ai-tools/speech-to-text/reviews/deepgram-ai-review/
+22. 7 Best Deepgram Alternatives for Speech-to-Text in 2026 - Gladia, accessed on June 11, 2026, https://www.gladia.io/blog/deepgram-alternatives
+23. Best TTS Providers 2026: Why Vendor Benchmarks Lie - Coval, accessed on June 11, 2026, https://coval.ai/blog/best-text-to-speech-providers-in-2026-how-to-choose-(and-why-vendor-benchmarks-lie)/
+24. ElevenLabs vs Cartesia Sonic (2026): Quality vs Latency Showdown ..., accessed on June 11, 2026, https://www.codesota.com/speech/elevenlabs-vs-cartesia
+25. 7 Best TTS APIs for AI Voice Agents in 2026 (Tested & Ranked), accessed on June 11, 2026, https://www.cekura.ai/blogs/best-tts-for-ai-voice-agents
+26. Speak to India the way India speaks - Cartesia AI, accessed on June 11, 2026, https://cartesia.ai/india/
+27. Free AI API Without Credit Card (2026): $2 Credits to Start - skillboss.co, accessed on June 11, 2026, https://www.skillboss.co/docs/blog/free-ai-api-no-credit-card-2026
+28. Human-Quality Voice AI for Indian Languages - ElevenLabs, accessed on June 11, 2026, https://elevenlabs.io/india
+29. Text to Speech & AI Voice Generator for Indian Languages - Sarvam AI, accessed on June 11, 2026, https://www.sarvam.ai/text-to-speech
+30. Hinglish Voice AI: Why ASR Fails and How to Fix It - Deepgram, accessed on June 11, 2026, https://deepgram.com/learn/hinglish-voice-ai-speech-recognition
+31. Minimizing the latency of voice stack built for Indian users : r/VoiceAutomationAI - Reddit, accessed on June 11, 2026, https://www.reddit.com/r/VoiceAutomationAI/comments/1s5d9dr/minimizing_the_latency_of_voice_stack_built_for/
+32. Blue Machines AI, Cartesia Partner to Offer India-Resident Low-Latency Voice AI Solutions, accessed on June 11, 2026, https://health.economictimes.indiatimes.com/news/health-it/blue-machines-ai-cartesia-partner-to-offer-india-resident-low-latency-voice-ai-solutions/128606716
+33. Fundamento Runs Millions of Financial Services Calls on Cartesia, accessed on June 11, 2026, https://www.cartesia.ai/customers/fundamento
+34. whisper.cpp Local Inference on Mac: Offline Transcription with CoreML & Apple Silicon, accessed on June 11, 2026, https://neosophie.com/en/blog/20260218-local-whisper
+35. IBM Cloud Free Tier, accessed on June 11, 2026, https://www.ibm.com/products/cloud/free
+36. Free Microsoft Cert Voucher Through AI Skills Fest : r/AzureCertification - Reddit, accessed on June 11, 2026, https://www.reddit.com/r/AzureCertification/comments/1tu6u2w/free_microsoft_cert_voucher_through_ai_skills_fest/
+37. Free Cloud GPU Credits in 2026: 10 Programs Worth $250K+ | Thunder Compute, accessed on June 11, 2026, https://www.thundercompute.com/blog/free-cloud-gpu-credits
+38. Fallbacks - LiteLLM Docs, accessed on June 11, 2026, https://docs.litellm.ai/docs/proxy/reliability
+39. [Definitive Guide] The Ultimate LLM Router with LiteLLM｜zephel01 - note, accessed on June 11, 2026, https://note.com/zephel01/n/n8c0a126b2f41?hl=en

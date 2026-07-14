@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAKI Infrastructure Blueprint</title>
+
+    <!-- Chosen Palette: Warm Neutrals & Muted Accents -->
+    <!-- Application Structure Plan: A tab-based technical dashboard. Chosen to allow the Principal Architect to focus on distinct infrastructure tiers (Conversational, Context, Routing, Voice) without vertical scroll fatigue. It provides a non-linear exploration path fitting for modular system design, culminating in a "Final Stack" recommendation. -->
+    <!-- Visualization & Content Choices: 
+         1. Conversational Brain -> Goal: Compare speed -> Viz: Horizontal Bar Chart (Chart.js) -> Interaction: Hover for exact metrics -> Justifies ultra-low latency provider choice.
+         2. Context Brain -> Goal: Compare context vs price -> Viz: Bubble Chart (Chart.js) -> Interaction: Hover for free tier details -> Justifies Gemini/DeepSeek selection.
+         3. Routing -> Goal: Explain failover logic -> Viz: HTML/CSS Flexbox Flowchart -> Interaction: Hover states on nodes -> NO SVG/Mermaid used.
+         4. Voice -> Goal: Show TTFA composition -> Viz: Stacked Bar Chart (Chart.js) -> Shows STT+LLM+TTS latency breakdown. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#FDFBF7',
+                            100: '#F4F1EA',
+                            200: '#E8E2D5',
+                            800: '#4A463F',
+                            900: '#2D2A26'
+                        },
+                        accent: {
+                            teal: '#A8DADC',
+                            blue: '#457B9D',
+                            beige: '#D4A373',
+                            red: '#E63946'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #FDFBF7; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 400px; }
+        }
+        .tab-btn.active {
+            border-bottom: 2px solid #D4A373;
+            color: #2D2A26;
+            font-weight: 600;
+        }
+        .stat-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #FDFBF7; }
+        ::-webkit-scrollbar-thumb { background: #E8E2D5; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #D4A373; }
+    </style>
+</head>
+<body class="text-warm-900 font-sans antialiased selection:bg-accent-beige selection:text-white">
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Header -->
+        <header class="mb-8 border-b border-warm-200 pb-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tight text-warm-900">HAKI Infrastructure Blueprint</h1>
+                    <p class="text-warm-800 mt-1 text-sm">Multi-Tiered LLM Routing Architecture for Sub-300ms TTFA</p>
+                </div>
+                <div class="bg-warm-100 px-4 py-2 rounded-lg border border-warm-200 flex items-center gap-2">
+                    <span class="text-xs font-mono uppercase tracking-wider text-warm-800">Target TTFA Budget</span>
+                    <span class="font-bold text-accent-red text-lg">&lt; 300ms</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="flex overflow-x-auto border-b border-warm-200 mb-8 whitespace-nowrap" aria-label="Tabs" id="nav-tabs">
+            <button onclick="switchTab('dashboard')" class="tab-btn active px-1 py-4 text-sm font-medium text-warm-800 hover:text-warm-900 mr-8">Executive Summary</button>
+            <button onclick="switchTab('conversational')" class="tab-btn px-1 py-4 text-sm font-medium text-warm-800 hover:text-warm-900 mr-8">1. Conversational Brain</button>
+            <button onclick="switchTab('context')" class="tab-btn px-1 py-4 text-sm font-medium text-warm-800 hover:text-warm-900 mr-8">2. Heavy Context</button>
+            <button onclick="switchTab('routing')" class="tab-btn px-1 py-4 text-sm font-medium text-warm-800 hover:text-warm-900 mr-8">3. API Routing</button>
+            <button onclick="switchTab('voice')" class="tab-btn px-1 py-4 text-sm font-medium text-warm-800 hover:text-warm-900 mr-8">4. Voice Layer</button>
+            <button onclick="switchTab('stack')" class="tab-btn px-1 py-4 text-sm font-medium text-accent-blue hover:text-blue-800">Final Stack Recommendation</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="content-area" class="min-h-[60vh]">
+
+            <!-- Section: Dashboard -->
+            <section id="dashboard" class="block animate-fade-in">
+                <p class="mb-6 text-warm-800 max-w-4xl leading-relaxed">
+                    This document synthesizes the latest API telemetry, pricing, and latency benchmarks to architect HAKI's backend. 
+                    The primary objective is reconciling two opposing requirements: <strong>ultra-low latency conversational interaction</strong> (fitting a 300ms Voice-in to Voice-out window) and <strong>massive context ingestion</strong> (1M+ tokens for RAG/PDFs).
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="stat-card bg-white p-6 rounded-xl border border-warm-200 shadow-sm">
+                        <div class="text-sm uppercase tracking-wide text-warm-800 mb-1">Fastest Inference Engine</div>
+                        <div class="text-2xl font-bold text-warm-900">Cerebras (Llama-3 8B)</div>
+                        <div class="text-sm text-accent-teal mt-2">&#9650; ~1000+ Tokens/Sec</div>
+                    </div>
+                    <div class="stat-card bg-white p-6 rounded-xl border border-warm-200 shadow-sm">
+                        <div class="text-sm uppercase tracking-wide text-warm-800 mb-1">Best Value Context Model</div>
+                        <div class="text-2xl font-bold text-warm-900">Gemini 1.5 Flash</div>
+                        <div class="text-sm text-accent-blue mt-2">&#9650; 1M Context / 15 RPM Free</div>
+                    </div>
+                    <div class="stat-card bg-white p-6 rounded-xl border border-warm-200 shadow-sm">
+                        <div class="text-sm uppercase tracking-wide text-warm-800 mb-1">Optimal Router Gateway</div>
+                        <div class="text-2xl font-bold text-warm-900">LiteLLM Proxy</div>
+                        <div class="text-sm text-accent-beige mt-2">&#9650; Python-native, 0ms overhead</div>
+                    </div>
+                </div>
+
+                <div class="bg-warm-100 rounded-xl p-6 border border-warm-200">
+                    <h3 class="text-lg font-semibold mb-4">The "Hinglish" Challenge</h3>
+                    <p class="text-sm text-warm-800 leading-relaxed mb-4">
+                        Code-switching between Hindi and English requires specific model characteristics. Standard Llama-3 models handle romanized Hindi passably but often default back to English. Models fine-tuned on multilingual corpora (like Cohere Command R+ or Gemini) show superior adherence to native Hinglish sentence structures without requiring massive few-shot prompting.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Section: Conversational -->
+            <section id="conversational" class="hidden animate-fade-in">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold mb-2">1. The Ultra-Low Latency Conversational Brain</h2>
+                    <p class="text-warm-800">
+                        Analyzing the current LPUs and specialized AI ASICs. To hit a 300ms TTFA budget, the LLM Time-To-First-Token (TTFT) must be under 50ms, and generation must outpace the Text-to-Speech buffer.
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-warm-200 shadow-sm mb-6">
+                    <h3 class="text-md font-semibold mb-4 text-center">Llama-3 8B Inference Speeds (Tokens per Second)</h3>
+                    <div class="chart-container">
+                        <canvas id="tpsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-warm-100 border-b border-warm-200 text-sm">
+                                <th class="p-4 font-semibold">Provider</th>
+                                <th class="p-4 font-semibold">TTFT (ms)</th>
+                                <th class="p-4 font-semibold">Free Tier / Promos</th>
+                                <th class="p-4 font-semibold">Verdict for HAKI</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-warm-800">
+                            <tr class="border-b border-warm-100 hover:bg-warm-50">
+                                <td class="p-4 font-medium text-warm-900">Groq</td>
+                                <td class="p-4">~15-20</td>
+                                <td class="p-4">30 RPM, 14.4k TPD (Highly restricted recently)</td>
+                                <td class="p-4">Excellent TTFT, but free tier is too strict for primary without fallback.</td>
+                            </tr>
+                            <tr class="border-b border-warm-100 hover:bg-warm-50 bg-green-50/30">
+                                <td class="p-4 font-medium text-warm-900">Cerebras</td>
+                                <td class="p-4">~10-15</td>
+                                <td class="p-4">Generous API beta access. Extremely high throughput.</td>
+                                <td class="p-4 text-green-700 font-medium">Primary Recommendation. Insane TPS outpaces TTS buffering.</td>
+                            </tr>
+                            <tr class="border-b border-warm-100 hover:bg-warm-50">
+                                <td class="p-4 font-medium text-warm-900">Together AI</td>
+                                <td class="p-4">~100</td>
+                                <td class="p-4">$5 sign-up. Solid rate limits.</td>
+                                <td class="p-4">Best reliability fallback. Slower TTFT but high uptime.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Section: Context -->
+            <section id="context" class="hidden animate-fade-in">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold mb-2">2. Heavy Context & Vision Brain</h2>
+                    <p class="text-warm-800">
+                        For ingesting Obsidian vaults and screen captures, context size and cost-per-million tokens are the primary metrics. Latency is secondary here as these processes run asynchronously to the conversational flow.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl border border-warm-200 shadow-sm">
+                        <h3 class="text-md font-semibold mb-4 text-center">Context Window vs Cost ($/1M Tokens Input)</h3>
+                        <div class="chart-container !h-64">
+                            <canvas id="contextChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="flex flex-col justify-center space-y-4">
+                        <div class="bg-warm-50 p-4 rounded-lg border border-warm-200">
+                            <h4 class="font-bold text-warm-900 flex justify-between">
+                                <span>Gemini 1.5 Flash</span>
+                                <span class="text-accent-blue bg-blue-50 px-2 py-0.5 rounded text-xs">Undisputed Champion</span>
+                            </h4>
+                            <p class="text-sm mt-2 text-warm-800">1M-2M context window. The free tier (15 RPM, 1M context) is unmatched. Native multimodal capabilities make it perfect for HAKI's screen ingestion.</p>
+                        </div>
+                        <div class="bg-warm-50 p-4 rounded-lg border border-warm-200">
+                            <h4 class="font-bold text-warm-900 flex justify-between">
+                                <span>DeepSeek V3 / Coder</span>
+                                <span class="text-accent-teal bg-teal-50 px-2 py-0.5 rounded text-xs">Cost Fallback</span>
+                            </h4>
+                            <p class="text-sm mt-2 text-warm-800">128k context. Extremely aggressive pricing strategy. Best used for heavy code-base summarization where Google's RPM limits are hit.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Routing -->
+            <section id="routing" class="hidden animate-fade-in">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold mb-2">3. API Gateways & Unified Routers</h2>
+                    <p class="text-warm-800">
+                        To maintain 99.9% uptime despite aggressive free-tier rate limiting, HAKI requires an intelligent gateway for automated model fallbacks and load balancing.
+                    </p>
+                </div>
+
+                <!-- Pure HTML/CSS Flowchart (NO SVG) -->
+                <div class="bg-white p-8 rounded-xl border border-warm-200 shadow-sm mb-8 overflow-x-auto">
+                    <h3 class="text-md font-semibold mb-6 text-center text-warm-800">HAKI Failover Architecture</h3>
+                    
+                    <div class="flex flex-col items-center min-w-[600px]">
+                        <!-- App Level -->
+                        <div class="bg-warm-900 text-white font-mono px-6 py-3 rounded shadow-md z-10 w-48 text-center">
+                            HAKI macOS App
+                        </div>
+                        <div class="h-8 w-px bg-warm-300"></div>
+                        <div class="text-xl text-warm-400 mb-1">&#8595;</div>
+                        
+                        <!-- Router Level -->
+                        <div class="bg-accent-beige text-warm-900 font-bold px-8 py-4 rounded-lg shadow-md border-2 border-warm-800 w-64 text-center">
+                            LiteLLM Proxy<br>
+                            <span class="text-xs font-normal">Self-Hosted / Python</span>
+                        </div>
+                        
+                        <div class="h-6 w-px bg-warm-300"></div>
+                        
+                        <!-- Split -->
+                        <div class="w-full max-w-2xl border-t-2 border-warm-300 flex justify-between relative mt-2">
+                            <!-- Left Branch -->
+                            <div class="w-1/2 flex flex-col items-center pt-2">
+                                <div class="text-sm font-semibold text-warm-500 mb-2 bg-white px-2 -mt-5">Fast Chat Flow</div>
+                                <div class="text-xl text-warm-400 mb-1">&#8595;</div>
+                                <div class="bg-green-100 border border-green-300 px-4 py-2 rounded mb-2 w-40 text-center shadow-sm hover:scale-105 transition-transform cursor-default">
+                                    <span class="text-xs text-green-700 block uppercase">Primary</span>
+                                    Cerebras Llama-3
+                                </div>
+                                <div class="text-sm text-warm-400">&#8595; <span class="text-xs">Rate limit</span></div>
+                                <div class="bg-blue-100 border border-blue-300 px-4 py-2 rounded mb-2 w-40 text-center shadow-sm hover:scale-105 transition-transform cursor-default mt-1">
+                                    <span class="text-xs text-blue-700 block uppercase">Fallback 1</span>
+                                    Groq Llama-3
+                                </div>
+                                <div class="text-sm text-warm-400">&#8595; <span class="text-xs">Rate limit</span></div>
+                                <div class="bg-gray-100 border border-gray-300 px-4 py-2 rounded w-40 text-center shadow-sm hover:scale-105 transition-transform cursor-default mt-1">
+                                    <span class="text-xs text-gray-600 block uppercase">Fallback 2</span>
+                                    Together AI
+                                </div>
+                            </div>
+                            
+                            <!-- Right Branch -->
+                            <div class="w-1/2 flex flex-col items-center pt-2">
+                                <div class="text-sm font-semibold text-warm-500 mb-2 bg-white px-2 -mt-5">Heavy RAG Flow</div>
+                                <div class="text-xl text-warm-400 mb-1">&#8595;</div>
+                                <div class="bg-purple-100 border border-purple-300 px-4 py-2 rounded mb-2 w-40 text-center shadow-sm hover:scale-105 transition-transform cursor-default">
+                                    <span class="text-xs text-purple-700 block uppercase">Primary</span>
+                                    Gemini 1.5 Flash
+                                </div>
+                                <div class="text-sm text-warm-400">&#8595; <span class="text-xs">Rate limit</span></div>
+                                <div class="bg-teal-100 border border-teal-300 px-4 py-2 rounded w-40 text-center shadow-sm hover:scale-105 transition-transform cursor-default mt-1">
+                                    <span class="text-xs text-teal-700 block uppercase">Fallback</span>
+                                    Anthropic Haiku via OpenRouter
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded border border-warm-200">
+                        <h4 class="font-bold text-warm-900 mb-2">Why LiteLLM over OpenRouter?</h4>
+                        <p class="text-sm text-warm-800">For HAKI, hosting LiteLLM locally on the Mac ensures 0ms network overhead for routing logic. It allows you to utilize your own free-tier API keys directly (Groq, Cerebras, Google) rather than paying OpenRouter's markup or relying on their rotating free models which change unpredictably.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded border border-warm-200">
+                        <h4 class="font-bold text-warm-900 mb-2">Bifrost / Custom Rust Gateways</h4>
+                        <p class="text-sm text-warm-800">While Rust-based gateways offer microsecond latency, LiteLLM's Python proxy overhead (~5ms) is negligible compared to network transit times. The developer velocity of LiteLLM's standard OpenAI-compatible endpoints wins out.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Voice -->
+            <section id="voice" class="hidden animate-fade-in">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold mb-2">4. The Online STT & TTS Fallback Layer</h2>
+                    <p class="text-warm-800">
+                        If Apple's native frameworks are inadequate, the cloud pipeline must deliver Audio-In to Audio-Out in &lt;300ms.
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-warm-200 shadow-sm mb-6">
+                    <h3 class="text-md font-semibold mb-4 text-center">Time-To-First-Audio (TTFA) Latency Stack</h3>
+                    <div class="chart-container">
+                        <canvas id="latencyChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-warm-50 p-5 rounded-xl border border-warm-200">
+                        <h3 class="text-lg font-bold text-warm-900 mb-3 border-b border-warm-200 pb-2">Speech-to-Text (STT)</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <span class="text-accent-teal mr-2">&#10003;</span>
+                                <div>
+                                    <strong class="block text-sm">Deepgram Nova-2 (Winner)</strong>
+                                    <span class="text-xs text-warm-800">Still the undisputed king of streaming latency (~250ms processing). Exceptional Hindi/English code-switching detection. $200 free credit covers ~40,000 minutes.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start opacity-60">
+                                <span class="text-warm-400 mr-2">&#10005;</span>
+                                <div>
+                                    <strong class="block text-sm">OpenAI Whisper Cloud</strong>
+                                    <span class="text-xs text-warm-800">Too slow for real-time conversational streaming (often >1s).</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-warm-50 p-5 rounded-xl border border-warm-200">
+                        <h3 class="text-lg font-bold text-warm-900 mb-3 border-b border-warm-200 pb-2">Text-to-Speech (TTS)</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <span class="text-accent-teal mr-2">&#10003;</span>
+                                <div>
+                                    <strong class="block text-sm">Cartesia (Sonic) - Recommended</strong>
+                                    <span class="text-xs text-warm-800">~135ms streaming latency. Excellent multilingual models that pronounce "Hinglish" naturally without heavy accents. Good developer tier.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-accent-blue mr-2">&#8226;</span>
+                                <div>
+                                    <strong class="block text-sm">ElevenLabs (Turbo v2.5)</strong>
+                                    <span class="text-xs text-warm-800">Best sheer quality, ~250ms latency. Free tier is generous (10k chars/mo), but latency is slightly higher than Cartesia.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-accent-blue mr-2">&#8226;</span>
+                                <div>
+                                    <strong class="block text-sm">PlayHT</strong>
+                                    <span class="text-xs text-warm-800">Fast streaming, but Hinglish pronunciation models are slightly less robust than Cartesia's current offering.</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Final Stack -->
+            <section id="stack" class="hidden animate-fade-in">
+                <div class="bg-warm-900 text-warm-50 rounded-2xl p-8 shadow-lg">
+                    <h2 class="text-3xl font-bold mb-4 text-accent-beige">Definitive HAKI Architecture</h2>
+                    <p class="text-warm-200 mb-8 max-w-3xl">
+                        Based on current free tiers, latency requirements, and the need for native Hinglish support, implement the following stack using LiteLLM as the local traffic cop.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-xl font-semibold mb-4 text-white border-b border-warm-700 pb-2">1. The Engine Room</h3>
+                            <ul class="space-y-4 text-sm text-warm-100">
+                                <li>
+                                    <span class="text-accent-teal font-bold block">Gateway Router: LiteLLM (Local via Python)</span>
+                                    Intercepts all HAKI requests. Handles automatic retries and fallback cascading based on API HTTP 429 status codes.
+                                </li>
+                                <li>
+                                    <span class="text-accent-beige font-bold block">Fast Conversational Core: Cerebras (Llama-3 8B)</span>
+                                    <span class="opacity-80">Fallback 1: Groq | Fallback 2: Together AI</span><br>
+                                    Provides the sub-20ms TTFT required. System prompts must be tuned to force natural Hinglish, as base Llama-3 leans heavily English.
+                                </li>
+                                <li>
+                                    <span class="text-accent-blue font-bold block">Heavy Context/Vision: Gemini 1.5 Flash</span>
+                                    Handles Obsidian vault RAG and screen interpretation using Google's massive 1M token free tier.
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h3 class="text-xl font-semibold mb-4 text-white border-b border-warm-700 pb-2">2. The Sensory Layer</h3>
+                            <ul class="space-y-4 text-sm text-warm-100">
+                                <li>
+                                    <span class="text-accent-teal font-bold block">STT Stream: Deepgram Nova-2</span>
+                                    Open a WebSocket connection from the Mac. Deepgram handles raw streaming audio and returns transcripts in ~250ms with excellent Hinglish detection.
+                                </li>
+                                <li>
+                                    <span class="text-accent-beige font-bold block">TTS Stream: Cartesia Sonic</span>
+                                    Feed Cerebras tokens chunks directly into Cartesia's WebSockets API. At ~135ms latency, audio generation begins before the LLM finishes the sentence.
+                                </li>
+                                <li>
+                                    <span class="text-accent-red font-bold block">Estimated TTFA (Time-To-First-Audio): ~380ms</span>
+                                    <em>(Deepgram 200ms + Network/LiteLLM 20ms + Cerebras TTFT 20ms + Cartesia 140ms).</em> While slightly over the strict 300ms budget, chunking optimizations and parallelizing STT finalizing with LLM predicting can bring it to ~300ms.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 bg-warm-800 p-4 rounded text-center border border-warm-700">
+                        <p class="text-sm"><strong>Pro Tip for Budget:</strong> Utilize Anthropic's new developer console free credits as a tertiary fallback in OpenRouter for complex reasoning tasks that Llama-3 8B fails at.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let currentTab = 'dashboard';
+        const charts = {}; // Store chart instances to destroy/recreate if needed
+
+        // --- Data ---
+        const tpsData = {
+            labels: ['Cerebras', 'SambaNova', 'Groq', 'Together AI'],
+            datasets: [{
+                label: 'Tokens per Second (Llama-3 8B)',
+                data: [1050, 950, 800, 150],
+                backgroundColor: ['#A8DADC', '#457B9D', '#D4A373', '#E8E2D5'],
+                borderRadius: 4
+            }]
+        };
+
+        const contextData = {
+            datasets: [
+                { label: 'Gemini 1.5 Flash', data: [{x: 0.075, y: 1000, r: 25}], backgroundColor: '#457B9D' },
+                { label: 'Gemini 1.5 Pro', data: [{x: 1.25, y: 2000, r: 15}], backgroundColor: '#2D2A26' },
+                { label: 'Claude 3.5 Haiku', data: [{x: 0.25, y: 200, r: 10}], backgroundColor: '#D4A373' },
+                { label: 'DeepSeek V3', data: [{x: 0.14, y: 128, r: 20}], backgroundColor: '#A8DADC' }
+            ]
+        };
+
+        const latencyData = {
+            labels: ['Optimized Stack (Deepgram + Cerebras + Cartesia)', 'Standard Stack (Whisper + Standard API + ElevenLabs)'],
+            datasets: [
+                { label: 'STT Processing', data: [220, 500], backgroundColor: '#457B9D' },
+                { label: 'Network & Routing', data: [20, 50], backgroundColor: '#D4A373' },
+                { label: 'LLM TTFT', data: [15, 120], backgroundColor: '#A8DADC' },
+                { label: 'TTS TTFA', data: [135, 250], backgroundColor: '#E63946' }
+            ]
+        };
+
+        // --- Core Interaction & Navigation ---
+        function switchTab(tabId) {
+            // Update active state on buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // Hide all sections
+            document.querySelectorAll('main > section').forEach(sec => {
+                sec.classList.remove('block');
+                sec.classList.add('hidden');
+            });
+
+            // Show target section
+            const targetSec = document.getElementById(tabId);
+            targetSec.classList.remove('hidden');
+            targetSec.classList.add('block');
+            
+            // Initialize charts if they belong to the opened tab and haven't been initialized
+            initChartsForTab(tabId);
+            currentTab = tabId;
+        }
+
+        // --- Chart Initialization ---
+        function initChartsForTab(tabId) {
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#5A5A5A';
+            
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            };
+
+            if (tabId === 'conversational' && !charts.tps) {
+                const ctx = document.getElementById('tpsChart').getContext('2d');
+                charts.tps = new Chart(ctx, {
+                    type: 'bar',
+                    data: tpsData,
+                    options: {
+                        ...commonOptions,
+                        indexAxis: 'y', // Horizontal bar chart
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: (ctx) => `${ctx.raw} TPS` } }
+                        },
+                        scales: { x: { beginAtZero: true, title: { display: true, text: 'Tokens / Sec' } } }
+                    }
+                });
+            }
+
+            if (tabId === 'context' && !charts.context) {
+                const ctx = document.getElementById('contextChart').getContext('2d');
+                charts.context = new Chart(ctx, {
+                    type: 'bubble',
+                    data: contextData,
+                    options: {
+                        ...commonOptions,
+                        plugins: {
+                            tooltip: { 
+                                callbacks: { 
+                                    label: (context) => {
+                                        return `${context.dataset.label}: $${context.raw.x}/1M tokens, ${context.raw.y}k Context`;
+                                    }
+                                } 
+                            }
+                        },
+                        scales: {
+                            x: { title: { display: true, text: 'Cost per 1M Input Tokens ($)' } },
+                            y: { title: { display: true, text: 'Context Window (Thousands)' } }
+                        }
+                    }
+                });
+            }
+
+            if (tabId === 'voice' && !charts.latency) {
+                const ctx = document.getElementById('latencyChart').getContext('2d');
+                charts.latency = new Chart(ctx, {
+                    type: 'bar',
+                    data: latencyData,
+                    options: {
+                        ...commonOptions,
+                        indexAxis: 'y',
+                        scales: {
+                            x: { stacked: true, title: { display: true, text: 'Latency (ms)' } },
+                            y: { stacked: true }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    afterBody: (context) => {
+                                        let total = 0;
+                                        context[0].chart.data.datasets.forEach(ds => {
+                                            total += ds.data[context[0].dataIndex];
+                                        });
+                                        return `\nTotal TTFA: ${total}ms`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Add simple CSS animation utility
+        document.head.insertAdjacentHTML('beforeend', `
+            <style>
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(5px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in {
+                    animation: fadeIn 0.3s ease-out forwards;
+                }
+            </style>
+        `);
+    </script>
+</body>
+</html>

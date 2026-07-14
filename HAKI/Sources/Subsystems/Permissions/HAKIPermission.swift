@@ -19,6 +19,7 @@ import Foundation
 /// - `.screenRecording` — ScreenCaptureKit / CGPreflightScreenCaptureAccess
 /// - `.accessibility`   — AX trusted-process check (AXIsProcessTrusted)
 /// - `.automation`      — Apple Events / AEDeterminePermissionToAutomateTarget
+/// - `.microphone`      — AVAudioSession / AVCaptureDevice microphone access
 ///
 /// Requirements: 2.1, 2.2, 2.6
 public enum HAKIPermission: CaseIterable, Hashable, Sendable, CustomStringConvertible {
@@ -28,6 +29,8 @@ public enum HAKIPermission: CaseIterable, Hashable, Sendable, CustomStringConver
     case accessibility
     /// Automation / Apple Events (Mac_Controller). Req 21, 21.15.
     case automation
+    /// Microphone access (AVAudioSession). Required for voice capture.
+    case microphone
 
     // MARK: Human-readable names
 
@@ -37,6 +40,7 @@ public enum HAKIPermission: CaseIterable, Hashable, Sendable, CustomStringConver
         case .screenRecording: return "Screen Recording"
         case .accessibility:   return "Accessibility"
         case .automation:      return "Automation"
+        case .microphone:      return "Microphone"
         }
     }
 
@@ -54,6 +58,9 @@ public enum HAKIPermission: CaseIterable, Hashable, Sendable, CustomStringConver
         case .automation:
             // Privacy & Security → Automation
             return URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")!
+        case .microphone:
+            // Privacy & Security → Microphone
+            return URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!
         }
     }
 

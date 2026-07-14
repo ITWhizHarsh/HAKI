@@ -130,6 +130,12 @@ public struct HAKIControlEvent: Sendable {
         case bargeIn
         /// VAD detected 800 ms silence — end of user speech (Req 3.2).
         case endOfSpeech
+        /// Core has started speaking a response (Python-side TTS playback began).
+        /// The shell arms barge-in detection so HAKI's own voice is not treated
+        /// as a new user turn.
+        case speakingStarted
+        /// Core has finished speaking a response (Python-side TTS playback ended).
+        case speakingStopped
         /// Keep-alive ping on an idle stream.
         case heartbeat
     }
@@ -169,6 +175,156 @@ public struct HAKITurnRequest: Sendable {
     }
 }
 
+// MARK: - Calendar proposal (Scheduler — Req 11.1, 11.2)
+
+/// A calendar event proposal sent from Core to Shell for user confirmation.
+///
+/// The user can confirm, reject, or edit the proposal via the UI panel.
+/// Mirrors the Python `CalendarProposal` dict sent as `PROPOSAL` IPC message.
+public struct HAKICalendarProposal: Sendable {
+    /// Unique proposal ID (stable across confirm/reject/edit actions).
+    public let proposalId: String
+    /// Event title extracted from the actionable item.
+    public var title: String
+    /// Date string ("YYYY-MM-DD"), `nil` if not extracted.
+    public var date: String?
+    /// Time string ("HH:mm"), `nil` if not extracted.
+    public var time: String?
+    /// Optional location string.
+    public var location: String?
+    /// Event description.
+    public var description: String
+    /// `true` when the date or time is missing and user clarification is needed.
+    public let needsClarification: Bool
+    /// Current lifecycle status: "proposed" | "confirmed" | "rejected" | "failed"
+    public var status: String
+
+    public init(
+        proposalId: String,
+        title: String,
+        date: String?,
+        time: String?,
+        location: String?,
+        description: String,
+        needsClarification: Bool,
+        status: String = "proposed"
+    ) {
+        self.proposalId = proposalId
+        self.title = title
+        self.date = date
+        self.time = time
+        self.location = location
+        self.description = description
+        self.needsClarification = needsClarification
+        self.status = status
+    }
+}
+
+// MARK: - Reminder notification (Scheduler — Req 12.6)
+
+/// An in-app reminder surfaced by the Scheduler via the REMINDER IPC message.
+///
+/// Mirrors the Python `Reminder` + `Task` dict combined for display.
+public struct HAKIReminderNotification: Sendable {
+    /// Unique reminder ID.
+    public let reminderId: String
+    /// The ID of the task this reminder belongs to.
+    public let taskId: String
+    /// Task title (shown in the notification).
+    public let taskTitle: String
+    /// Severity label (e.g. "EXAM", "BIRTHDAY", "DEFAULT").
+    public let severity: String
+    /// Formatted fire-at timestamp (ISO-8601).
+    public let fireAt: String
+    /// `true` for the birthday day-of prompt (Req 12.5).
+    public let isBirthdayDayOf: Bool
+
+    public init(
+        reminderId: String,
+        taskId: String,
+        taskTitle: String,
+        severity: String,
+        fireAt: String,
+        isBirthdayDayOf: Bool = false
+    ) {
+        self.reminderId = reminderId
+        self.taskId = taskId
+        self.taskTitle = taskTitle
+        self.severity = severity
+        self.fireAt = fireAt
+        self.isBirthdayDayOf = isBirthdayDayOf
+    }
+}
+
+// MARK: - Automation progress (Automation_Library — Req 17.5)
+
+/// A step-by-step progress event from a running automation.
+///
+/// Mirrors the Python `AUTOMATION_PROGRESS` IPC message.
+/// Surfaced in the automation-progress panel in the SwiftUI menu-bar UI.
+public struct HAKIAutomationProgress: Sendable {
+    /// Name of the automation being run.
+    public let automationName: String
+    /// Label of the current step (intent string or step ID).
+    public let step: String
+    /// Step status: "started" | "completed" | "failed" | "plan_complete" | "not_found"
+    public let status: String
+    /// Optional human-readable message for this status.
+    public let message: String
+
+    public init(
+        automationName: String,
+        step: String,
+        status: String,
+        message: String = ""
+    ) {
+        self.automationName = automationName
+        self.step = step
+        self.status = status
+        self.message = message
+    }
+}
+
+/// An image generated or edited by the Image_Studio, delivered from Core to Shell.
+///
+/// The Python Core generates the image, saves it to disk (Req 15.4), and sends
+/// this message so the Swift UI can display it inline in the chat/image panel.
+/// ``savedPath`` is set when the save succeeded (Req 15.4); when it is nil
+/// the save failed but the image is retained in-session (Req 15.5).
+///
+/// Mirrors proto: `message ImageResponse`
+public struct HAKIImageResponse: Sendable {
+    /// Unique image ID within the current session.
+    public let imageId: String
+    /// Short label, e.g. "Image 3".
+    public let displayLabel: String
+    /// Raw image bytes (PNG).  May be empty when ``savedPath`` is set and the
+    /// Shell prefers to load from disk.
+    public let imageData: Data
+    /// Absolute path on disk where the image was saved, or nil on save failure.
+    public let savedPath: String?
+    /// Human-readable confirmation or failure message for the user (Req 15.4, 15.5, 15.6).
+    public let message: String
+    /// true when generation/editing succeeded; false when it failed (Req 15.6).
+    public let success: Bool
+
+    public init(
+        imageId: String,
+        displayLabel: String,
+        imageData: Data,
+        savedPath: String?,
+        message: String,
+        success: Bool
+    ) {
+        self.imageId = imageId
+        self.displayLabel = displayLabel
+        self.imageData = imageData
+        self.savedPath = savedPath
+        self.message = message
+        self.success = success
+    }
+}
+
 // MARK: - Stream envelope types
 
 /// All messages the Swift shell sends on the bidirectional stream (upstream).
@@ -188,6 +344,14 @@ public enum ServerMessage: Sendable {
     case ttsAudioChunk(HAKITTSAudioChunk)
     case controlEvent(HAKIControlEvent)
     case error(String)
+    /// An image generated or edited by the Image_Studio (Req 15.1, 15.2, 15.3).
+    case imageResponse(HAKIImageResponse)
+    /// A calendar event proposal for user confirmation (Req 11.1).
+    case proposalReceived(HAKICalendarProposal)
+    /// An in-app reminder notification (Req 12.6).
+    case reminderFired(HAKIReminderNotification)
+    /// Step-by-step automation progress event (Req 17.5).
+    case automationProgress(HAKIAutomationProgress)
 }
 
 // MARK: - IPCClientProtocol

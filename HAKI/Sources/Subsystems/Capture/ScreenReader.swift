@@ -19,8 +19,8 @@ import ApplicationServices
 import PDFKit
 import ScreenCaptureKit
 import Vision
-import HAKIAudio
-import HAKIPermissions
+import HAKIAudio    // VoiceEngineProtocol, HAKIAudioFeatures
+import HAKIPermissions  // PermissionManagerProtocol, HAKICapability
 
 // MARK: - CapturedContent
 

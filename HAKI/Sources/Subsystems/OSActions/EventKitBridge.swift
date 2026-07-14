@@ -13,6 +13,10 @@ import Foundation
 
 public final class EventKitBridge: @unchecked Sendable {
 
+    // MARK: - Init
+
+    public init() {}
+
     // MARK: - State
 
     private let store = EKEventStore()

@@ -11,6 +11,7 @@ Requirements: 7, 9.2–9.6, 9.8.
 """
 
 from .chunker import Chunker
+from .haki_brain import HAKIBrain, IngestionResult, WikiPage
 from .indexer import Indexer
 from .memory_brain import (
     ExportResult,
@@ -31,6 +32,9 @@ __all__ = [
     "Chunker",
     "Indexer",
     "MemoryBrain",
+    "HAKIBrain",
+    "IngestionResult",
+    "WikiPage",
     "NoteSerializer",
     "NoteSerializationError",
     "StoreResult",

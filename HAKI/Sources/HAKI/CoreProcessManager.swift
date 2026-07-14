@@ -37,11 +37,16 @@ final class CoreProcessManager {
 
     // MARK: - Public interface
 
-    /// Spawn the Core process.
+    /// Spawn the Core process (if bundled) or just wait for an external Core.
     func start() {
         guard let executableURL = resolveExecutableURL() else {
-            // Core not yet bundled (development mode). No-op.
-            print("[CoreProcessManager] Core executable not found — running shell-only (development mode).")
+            // Core not bundled — assume it's running externally (development mode).
+            print("[CoreProcessManager] Core executable not found — assuming external Core process.")
+            print("[CoreProcessManager] Will attempt to connect to socket at: \(socketPath.path)")
+            // Poll for the socket and trigger onCoreReady when found
+            waitForSocketReady(path: socketPath, timeout: 10.0) { [weak self] in
+                self?.onCoreReady?()
+            }
             return
         }
 
@@ -83,8 +88,14 @@ final class CoreProcessManager {
 
     private func launchProcess(at url: URL) {
         let proc = Process()
-        proc.executableURL = url
-        proc.arguments = ["--socket", socketPath.path]
+        // Point to Core/.venv — this is where haki_core_service.py's dependencies
+        // (python-dotenv, groq, cerebras-cloud-sdk, etc.) are installed.
+        // HAKI_Core/venv is used only for the bundled executable build path.
+        let pythonPath = "/Users/harshkumarroy/Downloads/HKR/HAKI/Core/.venv/bin/python"
+        proc.executableURL = URL(fileURLWithPath: pythonPath)
+        proc.arguments = [url.path, "--socket", socketPath.path]
+        // Set the working directory to Core/ so load_dotenv() finds Core/.env
+        proc.currentDirectoryURL = URL(fileURLWithPath: "/Users/harshkumarroy/Downloads/HKR/HAKI/Core")
         proc.environment = ProcessInfo.processInfo.environment
 
         proc.terminationHandler = { [weak self] terminatedProcess in

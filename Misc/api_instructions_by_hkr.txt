@@ -1,0 +1,311 @@
+hey first of all fix all the coding error from your side that you mentioned in previous chat in points 2,3 mentioned below
+
+2. Phase 5 (Productivity) is mostly skeleton-only:
+
+Comms_Reader (WhatsApp/email reading) Ñ tasks 27.1, 27.2, 27.3 are unchecked
+
+Scheduler calendar creation (EventKit) Ñ tasks 28.1, 28.2 are unchecked
+
+Memory delete/export controls Ñ tasks 15.1, 15.2 are unchecked
+
+3. The Swift app currently has a build error (in build_output.txt): ScreenReader.swift can't find VoiceEngineProtocol in scope Ñ a cross-module type reference issue. build3.txt shows it compiled clean at one point, so this may be a recent regression.
+
+
+
+-----------------------
+
+then about the apis i am giving you full instructions on what to do follow this please :
+
+LLM Architecture & Model Strategy
+
+1. Drop AirLLM & 70B Local Models: The 8GB RAM on the M2 makes running 70B models locally non-viable. The disk swapping (reading layer-by-layer) will take minutes per response and degrade the SSD lifespan. Heavy logic must move to APIs.
+
+2. Local Brain (Router & Intent):
+
+ÊÊ¥ Primary: Ollama running Llama 3 (8B, 4-bit quantized).
+
+ÊÊ¥ Fallback: Phi-3 Mini (3.8B) if Llama 3 throttles the system while other apps are open.
+
+ÊÊ¥ Optimization Requirement: The local backend must leverage Apple's MLX framework. It is critical for maximizing speed and efficiency on Apple Silicon.
+
+3. API Muscle (Heavy Lifters):
+
+ÊÊ¥ Zero-Latency Conversations: Groq API (running Llama 3 70B). Their LPU architecture provides ~800 tokens/sec, making it the primary engine for fast, seamless Hinglish talk.
+
+ÊÊ¥ Heavy Automation & Context (RAG/LaTeX): Gemini 1.5 Flash / Gemini 2.5 Flash or Pro API. Essential for their massive context windows when analyzing question papers or the entire Obsidian vault.
+
+4. The Fallback Mesh (Routing Logic):
+
+ÊÊ¥ The system needs a custom router to ensure HAKI never goes down.
+
+ÊÊ¥ Routing Order: Groq API -> Gemini API -> OpenRouter -> NVIDIA NIM.
+
+-----
+
+STT (Speech-to-Text) & Audio Pipeline Architecture
+
+Please implement the following STT architecture for HAKI's ears. Our primary goal is absolute zero-latency conversational speed, flawless Hinglish understanding, and protecting the M2's 8GB RAM limit.
+
+1. The "Always Listening" Layer (VAD)
+
+Action: Implement Silero VAD locally in the Swift layer.
+
+Why: It takes virtually zero RAM/CPU and runs 24/7. It will handle barge-in (cutting off HAKI when I interrupt) and only trigger the STT engines when human speech is actually detected. Do not keep the STT models constantly listening.
+
+2. The Primary Engine (Zero-Latency API)
+
+Engine: Deepgram API (Nova-2 or Flux model).
+
+Implementation: Use streaming WebSockets. We need the text streaming back in milliseconds before I even finish my sentence.
+
+Constraint/Warning: Deepgram provides $200 in free credits on their free tier (approx. ~430 hours of streaming). At my expected usage (up to 5 hours daily), this will deplete in about 2.5 to 3 months. Therefore, the codebase must be built to seamlessly hot-swap to a fully free local alternative when credits run dry.
+
+3. The Fallback Mesh (Local M2 Architecture) Implement an automatic fallback chain if Deepgram hits API limits, drops connection, or runs out of credits:
+
+Fallback 1: MLX-Whisper (Apple Silicon Native)
+
+Action: Use Apple's MLX framework to run whisper-base or whisper-small locally.
+
+Why: It is highly optimized for the M2 Neural Engine, offloads work from the CPU, and respects our 8GB RAM cap. This is our primary offline backup.
+
+Fallback 2 (or Future Primary): SenseVoice-Small
+
+Action: Integrate Alibaba's open-source SenseVoice model as an alternative local engine.
+
+Why: It is specifically trained for Asian languages and handles Hinglish (code-switching) flawlessly. It is non-autoregressive (70ms latency for 10s of audioÑ15x faster than Whisper-Large), and it natively detects emotion (happy, angry, sad) from the audio file.
+
+Note: Keep SenseVoice in mind as a potential replacement for both our STT and our Mood Classifier down the road to save even more RAM.
+
+Fallback Execution Logic: Deepgram API (Streaming WebSocket) -> [Timeout/Limit Reached] -> MLX-Whisper (Local) -> [Alternative/Research] -> SenseVoice (Local)
+
+-----
+
+TTS (Text-to-Speech) & Streaming Architecture
+
+Please update the TTS pipeline to execute the following requirements. Our goal is absolute zero-latency conversational speed and human-quality voice synthesis that supports both English and Hindi natively without stressing the M2's 8GB RAM.
+
+1. Deprecate macOS say
+
+Action: Completely remove AVSpeechSynthesizer and macOS say from the TTS backend.
+
+Reason: The output sounds robotic and breaks the human conversational illusion.
+
+2. Integrate Kokoro TTS (The Primary Engine)
+
+Engine: Implement Kokoro TTS (82 million parameter open-weight model).
+
+Hardware Fit: At under 2GB VRAM/RAM footprint, this model is the absolute best-in-class for running ultra-fast inference on an M2 chip while leaving memory free for other background tasks.
+
+Setup: Use the official kokoro Python package (requires soundfile and the system dependency espeak-ng).
+
+3. Implement Chunked TTS Streaming (Zero-Latency)
+
+Action: Do not wait for the Groq LLM to generate the entire paragraph before triggering audio playback.
+
+Execution Logic:
+
+Stream the generated tokens from the LLM.
+
+Buffer the stream until the system hits a natural syntactic break (a comma, period, question mark, or roughly 5-7 words).
+
+Instantly push that text chunk to the Kokoro KPipeline generator.
+
+Play the generated audio chunk immediately while the LLM simultaneously generates the next chunk in the background.
+
+Result: This parallel processing ensures the time-to-first-audio (TTFA) drops to milliseconds, creating a seamless conversational flow.
+
+4. Multilingual & Hinglish Configuration
+
+Language Codes: Configure the KPipeline to handle both English (lang_code='a' or 'b') and Hindi.
+
+Voice Profiles: Use high-quality English voices (like af_heart or am_adam) for standard English, and utilize Kokoro's Hindi voice profile (hf_alpha) for native Hindi pronunciation.
+
+Routing Logic: Build a lightweight text-scanner before the TTS generation chunk. If the text chunk contains Devanagari script or is flagged as heavy Hindi, route it to the Hindi voice profile; otherwise, route it through the English profile to handle standard Hinglish and English effectively.
+
+5. The TTS Fallback Mesh Implement an automatic fallback chain to guarantee HAKI never loses its voice if a local model fails to load or system memory spikes.
+
+Execution Logic: Kokoro TTS (Local) -> ChatTTS (Local) -> Kokoro API (Online/Hosted)
+
+Primary (Local): Kokoro TTS. Runs locally, extremely fast, handles both Hindi and English.
+
+Fallback 1 (Local): ChatTTS. Highly conversational with natural pauses/laughs. Use this as the offline backup if Kokoro throws an error.
+
+Fallback 2 (Online): Kokoro API (via Unreal Speech or similar hosted endpoints). If the M2's 8GB RAM is completely maxed out by other IDEs and local models fail to allocate memory, bypass the local hardware entirely and stream the audio from the cloud API.
+
+-----
+STT (Speech-to-Text) & Audio Pipeline Architecture
+
+Please implement the following STT architecture for HAKI's ears. Our primary goal is absolute zero-latency conversational speed, flawless Hinglish understanding, and protecting the M2's 8GB RAM limit.
+
+1. The "Always Listening" Layer (VAD)
+
+Action: Implement Silero VAD locally in the Swift layer.
+
+Why: It takes virtually zero RAM/CPU and runs 24/7. It will handle barge-in (cutting off HAKI when I interrupt) and only trigger the STT engines when human speech is actually detected. Do not keep the STT models constantly listening.
+
+2. The Primary Engine (Zero-Latency API)
+
+Engine: Deepgram API (Nova-2 or Flux model).
+
+Implementation: Use streaming WebSockets. We need the text streaming back in milliseconds before I even finish my sentence.
+
+Constraint/Warning: Deepgram provides $200 in free credits on their free tier (approx. ~430 hours of streaming). At my expected usage (up to 5 hours daily), this will deplete in about 2.5 to 3 months. Therefore, the codebase must be built to seamlessly hot-swap to a fully free local alternative when credits run dry.
+
+3. The Fallback Mesh (Local M2 Architecture)
+Implement an automatic fallback chain if Deepgram hits API limits, drops connection, or runs out of credits:
+
+Fallback 1: MLX-Whisper (Apple Silicon Native)
+
+Action: Use Apple's MLX framework to run whisper-base or whisper-small locally.
+
+Why: It is highly optimized for the M2 Neural Engine, offloads work from the CPU, and respects our 8GB RAM cap. This is our primary offline backup.
+
+Fallback 2 (or Future Primary): SenseVoice-Small
+
+Action: Integrate Alibaba's open-source SenseVoice model as an alternative local engine.
+
+Why: It is specifically trained for Asian languages and handles Hinglish (code-switching) flawlessly. It is non-autoregressive (70ms latency for 10s of audioÑ15x faster than Whisper-Large), and it natively detects emotion (happy, angry, sad) from the audio file.
+
+Note: Keep SenseVoice in mind as a potential replacement for both our STT and our Mood Classifier down the road to save even more RAM.
+
+Fallback Execution Logic:
+Deepgram API (Streaming WebSocket) -> [Timeout/Limit Reached] -> MLX-Whisper (Local) -> [Alternative/Research] -> SenseVoice (Local)
+-----
+TTS (Text-to-Speech) & Streaming Architecture
+
+Please update the TTS pipeline to execute the following requirements. Our goal is absolute zero-latency conversational speed and human-quality voice synthesis that supports both English and Hindi natively without stressing the M2's 8GB RAM.
+
+1. Deprecate macOS say
+
+Action: Completely remove AVSpeechSynthesizer and macOS say from the TTS backend.
+
+Reason: The output sounds robotic and breaks the human conversational illusion.
+
+2. Integrate Kokoro TTS (The Primary Engine)
+
+Engine: Implement Kokoro TTS (82 million parameter open-weight model).
+
+Hardware Fit: At under 2GB VRAM/RAM footprint, this model is the absolute best-in-class for running ultra-fast inference on an M2 chip while leaving memory free for other background tasks.
+
+Setup: Use the official kokoro Python package (requires soundfile and the system dependency espeak-ng).
+
+3. Implement Chunked TTS Streaming (Zero-Latency)
+
+Action: Do not wait for the Groq LLM to generate the entire paragraph before triggering audio playback.
+
+Execution Logic:
+
+Stream the generated tokens from the LLM.
+
+Buffer the stream until the system hits a natural syntactic break (a comma, period, question mark, or roughly 5-7 words).
+
+Instantly push that text chunk to the Kokoro KPipeline generator.
+
+Play the generated audio chunk immediately while the LLM simultaneously generates the next chunk in the background.
+
+Result: This parallel processing ensures the time-to-first-audio (TTFA) drops to milliseconds, creating a seamless conversational flow.
+
+4. Multilingual & Hinglish Configuration
+
+Language Codes: Configure the KPipeline to handle both English (lang_code='a' or 'b') and Hindi.
+
+Voice Profiles: Use high-quality English voices (like af_heart or am_adam) for standard English, and utilize Kokoro's Hindi voice profile (hf_alpha) for native Hindi pronunciation.
+
+Routing Logic: Build a lightweight text-scanner before the TTS generation chunk. If the text chunk contains Devanagari script or is flagged as heavy Hindi, route it to the Hindi voice profile; otherwise, route it through the English profile to handle standard Hinglish and English effectively.
+5. The TTS Fallback Mesh
+Implement an automatic fallback chain to guarantee HAKI never loses its voice if a local model fails to load or system memory spikes.
+
+Execution Logic: Kokoro TTS (Local) -> ChatTTS (Local) -> Kokoro API (Online/Hosted)
+
+Primary (Local): Kokoro TTS. Runs locally, extremely fast, handles both Hindi and English.
+
+Fallback 1 (Local): ChatTTS. Highly conversational with natural pauses/laughs. Use this as the offline backup if Kokoro throws an error.
+
+Fallback 2 (Online): Kokoro API (via Unreal Speech or similar hosted endpoints). If the M2's 8GB RAM is completely maxed out by other IDEs and local models fail to allocate memory, bypass the local hardware entirely and stream the audio from the cloud API.
+-----
+Embeddings, RAG & Memory Architecture
+
+Please update the Memory/Vault backend (Phase 3) with the following architecture to support Hinglish retrieval and respect the 8GB RAM limit:
+
+1. Deprecate Nomic-Embed
+
+Action: Do not use nomic-embed-text. It is English-centric and fails on code-switched Hinglish and Devanagari script.
+
+2. Primary Local Embedding Engine
+
+Engine: paraphrase-multilingual-MiniLM-L12-v2 via sentence-transformers.
+
+Why: At ~120MB, it uses virtually zero RAM. It aligns Hindi, English, and Romanized Hindi (Hinglish) into the same vector space, guaranteeing accurate retrieval from the Obsidian vault regardless of the language the notes are written in.
+
+Alternative: jina-embeddings-v5-text-nano if we need slightly higher MTEB performance within the same RAM constraints.
+
+3. The API Fallback Mesh (For Massive Documents)
+
+Execution Logic: Local MiniLM -> Cohere Embed Multilingual API -> Gemini Embedding 2 API
+
+Routing: Use the local model for standard chat memory and Obsidian retrieval. Route to Cohere/Gemini APIs only when the user requests RAG over massive external documents (e.g., massive PDFs, full codebase analysis) that exceed local chunking efficiency.
+
+4. Vector Storage Integration
+
+Action: Explicitly add chromadb to requirements.txt.
+
+Setup: Configure Chroma to run in local persistent mode, saving the SQLite/Parquet files directly to the Mac's SSD so memory is retained across reboots. Wire the sentence-transformers directly into Chroma's embedding function.
+-----
+Embeddings & Custom LLM Wiki Architecture
+
+Please implement the following memory architecture. We are combining a lightweight, Hinglish-native embedding strategy with a modified version of Andrej Karpathy's "LLM Wiki" pattern (Reference: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
+
+1. The Embedding & Vector DB Engine
+
+Vector DB: Use chromadb running locally in persistent mode (saving to the Mac's SSD).
+
+Primary Local Embeddings: Use paraphrase-multilingual-MiniLM-L12-v2 via sentence-transformers. This model is microscopic (~120MB) and handles mixed scripts and Hinglish flawlessly. Do not use Nomic.
+
+API Fallbacks: If massive context chunking is required, fallback to the Cohere Embed Multilingual API -> Gemini Embedding 2 API.
+
+2. The Custom 3-Folder Wiki Structure
+Instead of the standard 2-folder system in the original gist, HAKI will use a strict 3-folder pipeline inside the Obsidian vault:
+
+raw/ : The inbox. This is where I drop unprocessed incoming files, PDFs, images, and raw chat logs.
+
+processed/ : The archive. Once HAKI has successfully ingested a file from the raw/ folder, the original file MUST be automatically moved here.
+
+wiki/ : The brain. This is where HAKI writes, maintains, and links the clean Markdown files based on the ingested data.
+
+3. Ingestion & Bidirectional Connection Logic
+
+File Movement: Build an automation script so that the moment a file in raw/ is read and synthesized into the wiki/, it is physically moved to processed/. The raw/ folder should remain empty when HAKI is caught up on its tasks.
+
+Absolute Traceability (The Cross-Reference Rule): Every single piece of information, entity page, or concept page generated inside the wiki/ folder MUST contain a direct connection to its source file.
+
+Implementation: Inject a "Sources" section or YAML frontmatter block at the top/bottom of the generated wiki Markdown files containing an Obsidian wikilink (e.g., [[processed/filename.pdf]]). This ensures I can always click the link in my wiki and instantly view the exact original document the AI used to generate that fact.
+-----
+Project HAKI: Mood Detection and Audio Analytics Pipeline Update
+
+Please deprecate the previously planned librosa and custom ML classifier pipeline for Phase 4 (Mood/Persona Engine). Loading a separate audio classification model alongside the LLM and TTS layers will cause unnecessary memory pressure on our 8GB RAM ceiling.
+
+Instead, implement a hardware-native, Zero-RAM DSP (Digital Signal Processing) pipeline in the Swift shell, combined with upstream LLM token tagging.
+
+1. Deprecate Librosa and Custom Training
+Action: Remove all audio classification training scripts, feature extraction files, and related dependencies from the Python core.
+Reason: Eliminates the need to gather pre-recorded datasets, avoids custom model training, and saves valuable VRAM/RAM allocation.
+2. Native Swift Audio DSP (The Extraction Layer)
+Leverage Apple's native Accelerate and AVFoundation frameworks within the audio input subsystem (HAKI/Sources/Subsystems/) to process the raw input buffer in real-time.
+Volume/Energy Tracking: Use vDSP_rmsqv (Root Mean Square) on the incoming AVAudioPCMBuffer to continuously calculate the signal amplitude.
+Pitch Tracking: Implement a lightweight fundamental frequency (f0) tracking algorithm (such as basic Autocorrelation or a simplified YIN method) natively within the Swift audio tap loop.
+Resource Footprint: This execution runs directly on CPU registers via SIMD optimization, resulting in virtually 0% RAM overhead and negligible CPU utilization.
+3. Core Threshold Logic
+Establish a baseline calibration loop during initialization to map the user's natural speaking volume and frequency. Use simple threshold boundaries to intercept outliers:
+High-Energy (Shouting/Anger): RMS is greater than High Threshold AND f0 is greater than High Pitch Threshold
+Low-Energy (Sadness/Fatigue): RMS is less than Low Threshold AND f0 is less than Low Pitch Threshold
+4. Hidden Mood Tagging Protocol
+Do not attempt to pass raw frequencies to the Python layer. Convert the audio metrics directly into semantic string metadata inside the Swift layer.
+Payload Injection: When the VAD triggers and packages the text from the STT stream, prepend a hidden system token containing the analyzed mood vector before sending the payload over the gRPC UNIX socket.
+Format Example: [METADATA: MOOD=ANGRY_SHOUT] bhai ye code bar bar crash ho raha hai aur error samajh nahi aa raha
+5. Persona Engine Orchestration (Python Core)
+Action: Update the Orchestrator turn loop and Persona Engine to strip these custom metadata tags from the incoming gRPC string before text processing.
+Execution: Pass the extracted mood state as a variable into the Groq API context system prompt.
+Response Adjustment: Ensure the prompt forces the LLM to adjust its linguistic style dynamically based on the tag (e.g., injecting witty, calming Hinglish like "Ok chill out boss, handle kar rahe hain" if ANGRY_SHOUT is detected, or shifting to an encouraging, upbeat demeanor if SAD_LOW_ENERGY is appended).
+-----
+
+

@@ -5,8 +5,15 @@
 // HAKI Core child process.
 
 import AppKit
+import AVFoundation
 import SwiftUI
 import HAKIIPC
+import HAKIUI
+import HAKIAudio
+import HAKIPermissions
+
+// Import CoreAudioPlayer for TTS playback
+import class HAKIAudio.CoreAudioPlayer
 
 /// Root application delegate.
 ///
@@ -29,13 +36,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Retained here so its lifetime matches the app.
     private var ipcClient: JSONIPCClient?
 
+    /// Voice engine — microphone capture, VAD, STT, TTS.
+    private var voiceEngine: VoiceEngine?
+
+    /// Permission manager — TCC gates.
+    private var permissionManager: PermissionManager?
+    
+    /// Audio player for TTS responses from Core
+    private var audioPlayer: CoreAudioPlayer?
+
     // MARK: - NSApplicationDelegate
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Prevent a dock icon — this is a menu-bar-only app.
         NSApp.setActivationPolicy(.accessory)
 
+        // Initialize PermissionManager on main actor (it is @MainActor-isolated).
+        permissionManager = PermissionManager()
+
         setupMenuBarItem()
+        // Open the conversation window immediately so the user can see
+        // what HAKI is hearing and saying.
+        ConversationWindowController.shared.open()
         setupIPC()
         coreProcessManager.start()
     }
@@ -58,14 +80,124 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // socket file exists.
         coreProcessManager.onCoreReady = { [weak self] in
             guard let self, let client = self.ipcClient else { return }
+            print("[AppDelegate] Core socket is ready, attempting IPC connection...")
             Task {
                 do {
                     try await client.connect()
-                    print("[AppDelegate] IPC connected to Core.")
+                    print("[AppDelegate] ✓ IPC connected to Core successfully!")
+                    
+                    print("")
+                    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                    print("  ✅ HAKI IS READY — speak to interact!")
+                    print("  🎤 Requesting microphone permission...")
+                    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                    print("")
+
+                    // Request microphone permission and wait for the actual result.
+                    // AVCaptureDevice.requestAccess is the authoritative async call —
+                    // it returns true once the user grants, or immediately if already granted.
+                    let granted = await AVCaptureDevice.requestAccess(for: .audio)
+                    guard granted else {
+                        print("[AppDelegate] ✗ Microphone permission denied. Enable HAKI in System Settings → Privacy & Security → Microphone.")
+                        return
+                    }
+                    print("[AppDelegate] ✓ Microphone permission granted.")
+
+                    // Start the IPC listener in its own task FIRST. It plays
+                    // TTS audio chunks and routes LLM tokens / proposals /
+                    // reminders to the UI. startVoiceEngine below blocks on its
+                    // own event loop forever, so the listener MUST run
+                    // concurrently or audio playback and UI updates never run.
+                    Task { [weak self] in
+                        await self?.listenForIPCMessages(client: client)
+                    }
+
+                    await self.startVoiceEngine(ipcClient: client)
                 } catch {
-                    print("[AppDelegate] IPC connect failed: \(error).")
+                    print("[AppDelegate] ✗ IPC error: \(error)")
                 }
             }
+        }
+    }
+
+    /// Create the VoiceEngine and start listening for speech.
+    /// Retries once after a short delay if the first attempt fails with
+    /// hardwareUnavailable — this handles the window between TCC grant and
+    /// AVAudioEngine being ready.
+    private func startVoiceEngine(ipcClient: any IPCClientProtocol) async {
+        let engine = VoiceEngineFactory.makeLive(ipcClient: ipcClient)
+        self.voiceEngine = engine
+
+        for attempt in 1...3 {
+            do {
+                let events = try engine.listen()
+                print("[AppDelegate] 🎤 VoiceEngine started — HAKI is listening! (attempt \(attempt))")
+                for await event in events {
+                    switch event {
+                    case .finalTranscript(let text, _):
+                        print("[AppDelegate] 🗣️ Heard: \(text)")
+                        UIState.postTranscriptUpdate(text)
+                    case .partialTranscript(let text):
+                        UIState.postTranscriptUpdate(text)
+                    case .bargeIn:
+                        // User started talking while HAKI was speaking. Stop our
+                        // own playback locally and tell the Core to kill its
+                        // audio + cancel the in-flight turn, then keep listening.
+                        print("[AppDelegate] ✋ Barge-in detected — stopping HAKI to listen.")
+                        engine.bargeInStop()
+                        try? await ipcClient.send(
+                            .controlEvent(HAKIControlEvent(eventType: .bargeIn, sequenceNum: 0))
+                        )
+                    default:
+                        break
+                    }
+                }
+                return // stream ended cleanly
+            } catch {
+                print("[AppDelegate] ✗ VoiceEngine failed to start (attempt \(attempt)): \(error)")
+                if attempt < 3 {
+                    print("[AppDelegate] Retrying in 1s…")
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                }
+            }
+        }
+        print("[AppDelegate] ✗ VoiceEngine could not start after 3 attempts. Check microphone permission in System Settings → Privacy & Security → Microphone.")
+    }
+
+    private func listenForIPCMessages(client: JSONIPCClient) async {
+        print("[AppDelegate] 🎧 Starting IPC message listener...")
+        
+        // Create audio player for TTS responses
+        if audioPlayer == nil {
+            audioPlayer = CoreAudioPlayer()
+            print("[AppDelegate] ✓ CoreAudioPlayer created")
+        }
+        
+        for await message in client.inbound {
+            // Handle TTS audio chunks from Python Core
+            if case .ttsAudioChunk(let chunk) = message {
+                print("[AppDelegate] 🔊 Received TTS chunk from Python: \(chunk.samples.count) bytes")
+                audioPlayer?.playChunk(chunk)
+            }
+
+            // When the Core starts/stops speaking (its TTS plays via afplay on
+            // the Python side), arm/disarm the VAD's barge-in detection so HAKI
+            // does not hear its own voice as a new user turn, and so a real
+            // interruption is detected as a barge-in.
+            if case .controlEvent(let ce) = message {
+                switch ce.eventType {
+                case .speakingStarted:
+                    self.voiceEngine?.notifyTTSStarted()
+                case .speakingStopped:
+                    self.voiceEngine?.notifyTTSStopped()
+                default:
+                    break
+                }
+            }
+
+            // Route image / proposal / reminder / automation-progress messages
+            // to the appropriate UIState helpers so the SwiftUI panels update.
+            routeIPCServerMessage(message)
         }
     }
 

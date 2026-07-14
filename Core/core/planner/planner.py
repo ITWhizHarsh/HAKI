@@ -154,6 +154,11 @@ class Step:
     required_slots  Slot names that must be resolved (from memory or user)
                     before this step runs.  The Dialogue_Manager fills
                     these from Memory_Brain first (Req 23.1, 23.2).
+    postcondition   Optional callable ``(result: Any) -> bool`` that
+                    verifies the actuator output meets expectations.
+                    When present, the ExecutionEngine calls it after the
+                    actuator returns; if it returns ``False`` or raises,
+                    the step is marked FAILED (Req 21.1 / Task 23.1).
     status          Lifecycle state of this step (Req 21.1).
 
     Design: Data Models (CommandPlan & Step).
@@ -167,6 +172,7 @@ class Step:
     depends_on: list[str] = field(default_factory=list)  # IDs of prerequisite steps
     classification: StepClassification = StepClassification.UNKNOWN
     required_slots: list[str] = field(default_factory=list)
+    postcondition: Any | None = field(default=None, repr=False, compare=False)
     status: StepStatus = StepStatus.PENDING
 
 

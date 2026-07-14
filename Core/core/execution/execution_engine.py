@@ -14,14 +14,16 @@ following loop (per the design's execution flowchart):
              - rejected → skip step + transitive dependents; report (22.3, 22.6)
              - timeout → treat as rejection (22.8)
         3. Execute via actuator callback
-        4. Postcondition check (optional)
+        4. Postcondition check (optional): if step.postcondition is set,
+           call it with the actuator result; failure marks the step FAILED
+           and stops transitive dependents.
         5. Mark COMPLETED / FAILED; stop transitive dependents on failure
 
-At the end an :class:`ExecutionReport` is returned describing completed
-steps vs. not-performed steps.
+At the end a :class:`PlanCompletionEvent` (Req 21.8) is emitted listing
+all executed, not-performed, and failed step IDs.
 
 Design: Safety_Gate, Execution loop.
-Requirements: 22.1, 22.2, 22.3, 22.4, 22.5, 22.6, 22.7, 22.8.
+Requirements: 17.2, 21.8, 22.1, 22.2, 22.3, 22.4, 22.5, 22.6, 22.7, 22.8, 23.1.
 """
 
 from __future__ import annotations
@@ -41,6 +43,15 @@ from core.planner import (
 from .safety_gate import (
     ConfirmationResult,
     SafetyGate,
+)
+from .models import (
+    PlanCompletionEvent,
+    StepEvent as ModelStepEvent,
+)
+from .errors import (
+    AppNotInstalledError,
+    ElementNotFoundError,
+    WebsiteUnreachableError,
 )
 
 logger = logging.getLogger(__name__)
@@ -125,6 +136,10 @@ class ExecutionReport:
         The ID of the step whose confirmation timed out, if any (Req 22.8).
     cancelled:
         Whether the plan was externally cancelled via :meth:`ExecutionEngine.cancel`.
+    completion_event:
+        Structured :class:`~core.execution.models.PlanCompletionEvent`
+        carrying the typed summary of this execution (Req 21.8).
+        Populated at plan completion.
     """
 
     completed: list[Step] = field(default_factory=list)
@@ -133,6 +148,12 @@ class ExecutionReport:
     rejected_step_id: str | None = None
     timeout_step_id: str | None = None
     cancelled: bool = False
+    completion_event: PlanCompletionEvent | None = None
+    #: Maps step_id → human-readable failure reason for each failed step.
+    #: Populated by the execution loop with the exception message so callers
+    #: can distinguish AppNotInstalledError, ElementNotFoundError, etc.
+    #: (Reqs 17.7, 21.9, 21.12, 21.13)
+    failure_reasons: dict[str, str] = field(default_factory=dict)
 
     @property
     def all_completed(self) -> bool:
@@ -212,10 +233,12 @@ class ExecutionEngine:
         safety_gate: SafetyGate | None = None,
         actuator_callback: ActuatorCallbackAsync | None = None,
         sync_actuator_callback: ActuatorCallbackSync | None = None,
+        dialogue_manager: Any | None = None,
     ) -> None:
         self._gate = safety_gate or SafetyGate()
         self._async_actuator = actuator_callback
         self._sync_actuator = sync_actuator_callback
+        self._dialogue_manager = dialogue_manager  # DialogueManager | None
         self._cancelled = False
         self._cancel_lock = asyncio.Lock()
 
@@ -376,6 +399,18 @@ class ExecutionEngine:
         )
         report.failed = plan.failed_steps()
 
+        # Build PlanCompletionEvent (Req 21.8): report which steps were
+        # completed, not performed, and failed.
+        completion = PlanCompletionEvent(
+            executed_step_ids=[s.id for s in report.completed],
+            not_performed_step_ids=[s.id for s in report.not_performed],
+            failed_steps=[
+                (s.id, report.failure_reasons.get(s.id, s.intent or s.id))
+                for s in report.failed
+            ],
+        )
+        report.completion_event = completion
+
         yield StepEvent(
             event_type=StepEventType.PLAN_COMPLETE,
             message=report.summary(),
@@ -401,6 +436,80 @@ class ExecutionEngine:
         - Actuator execution
         - Dependency propagation on failure / rejection
         """
+        # ----------------------------------------------------------------
+        # 0. Per-step slot resolution via DialogueManager (Req 23.1, 23.3)
+        # ----------------------------------------------------------------
+        if self._dialogue_manager is not None and step.required_slots:
+            dm = self._dialogue_manager
+
+            # Build the completed_steps list from the plan so far
+            completed_step_ids = [s.id for s in plan.completed_steps()]
+
+            # Assess which required slots are already resolved
+            slot_result = dm.assess(step.intent, step.required_slots)
+
+            if not slot_result.sufficient:
+                missing = slot_result.missing
+
+                # Try to fill from memory first (Req 23.2)
+                fill_result = dm.fill_from_memory(missing)
+
+                # Mark memory-resolved slots as resolved
+                for slot_name, value in fill_result.resolved.items():
+                    dm.mark_resolved(slot_name, value)
+
+                still_missing = fill_result.still_missing
+
+                # For each still-missing slot, pause and ask the user (Req 23.3)
+                for slot_name in still_missing:
+                    question = (
+                        f"To continue with '{step.intent}', I need the value "
+                        f"for '{slot_name}'. Could you provide it?"
+                    )
+                    task_state: dict[str, Any] = {"step_id": step.id, "intent": step.intent}
+                    answer, _ = await dm.on_decision_point(
+                        step_id=step.id,
+                        question=question,
+                        slot_name=slot_name,
+                        completed_steps=completed_step_ids,
+                        task_state=task_state,
+                    )
+
+                    if answer:
+                        # User provided a value — mark resolved (Req 23.5)
+                        dm.mark_resolved(slot_name, answer)
+                    else:
+                        # User declined (no answer returned) — abandon step (Req 23.7)
+                        decline_result = dm.on_decline(slot_name, has_default=False)
+                        # abandon_step — skip this step and all transitive dependents
+                        step.status = StepStatus.SKIPPED
+                        await event_queue.put(StepEvent(
+                            event_type=StepEventType.SKIPPED,
+                            step_id=step.id,
+                            step=step,
+                            message=(
+                                f"Step '{step.id}' skipped: slot '{slot_name}' "
+                                f"was not provided. {decline_result.message}"
+                            ),
+                        ))
+                        report.not_performed.append(step)
+
+                        dependents = plan.transitive_dependents(step.id)
+                        for dep in dependents:
+                            dep.status = StepStatus.SKIPPED
+                            report.not_performed.append(dep)
+                            await event_queue.put(StepEvent(
+                                event_type=StepEventType.SKIPPED,
+                                step_id=dep.id,
+                                step=dep,
+                                message=(
+                                    f"Step '{dep.id}' skipped because its "
+                                    f"predecessor '{step.id}' was abandoned "
+                                    f"(missing slot '{slot_name}')."
+                                ),
+                            ))
+                        return  # Do not execute this step
+
         # ----------------------------------------------------------------
         # 1. Safety gate
         # ----------------------------------------------------------------
@@ -493,15 +602,19 @@ class ExecutionEngine:
         try:
             output = await self._execute_actuator(step)
         except Exception as exc:
-            # Actuator raised — mark FAILED and stop dependents
+            # Actuator raised — mark FAILED and stop dependents.
+            # Named failure types (Reqs 21.9, 21.12, 21.13) produce a
+            # structured reason string; generic exceptions use str(exc).
+            reason = str(exc)
             step.status = StepStatus.FAILED
             await event_queue.put(StepEvent(
                 event_type=StepEventType.FAILED,
                 step_id=step.id,
                 step=step,
-                message=f"Step '{step.id}' failed: {exc}",
+                message=f"Step '{step.id}' failed: {reason}",
             ))
             report.failed.append(step)
+            report.failure_reasons[step.id] = reason
 
             dependents = plan.transitive_dependents(step.id)
             for dep in dependents:
@@ -519,7 +632,52 @@ class ExecutionEngine:
             return
 
         # ----------------------------------------------------------------
-        # 4. Mark COMPLETED
+        # 4. Verify postcondition (Req Task 23.1)
+        # ----------------------------------------------------------------
+        if step.postcondition is not None:
+            try:
+                passed = step.postcondition(output)
+            except Exception as exc:
+                passed = False
+                postcondition_reason = (
+                    f"Postcondition check raised an exception: {exc}"
+                )
+            else:
+                postcondition_reason = (
+                    "Postcondition was not met."
+                ) if not passed else None
+
+            if not passed:
+                step.status = StepStatus.FAILED
+                await event_queue.put(StepEvent(
+                    event_type=StepEventType.FAILED,
+                    step_id=step.id,
+                    step=step,
+                    message=(
+                        f"Step '{step.id}' postcondition failed: "
+                        f"{postcondition_reason}"
+                    ),
+                ))
+                report.failed.append(step)
+                report.failure_reasons[step.id] = postcondition_reason or "Postcondition not met."
+
+                dependents = plan.transitive_dependents(step.id)
+                for dep in dependents:
+                    dep.status = StepStatus.SKIPPED
+                    report.not_performed.append(dep)
+                    await event_queue.put(StepEvent(
+                        event_type=StepEventType.SKIPPED,
+                        step_id=dep.id,
+                        step=dep,
+                        message=(
+                            f"Step '{dep.id}' skipped because its "
+                            f"predecessor '{step.id}' failed postcondition check."
+                        ),
+                    ))
+                return
+
+        # ----------------------------------------------------------------
+        # 5. Mark COMPLETED
         # ----------------------------------------------------------------
         step.status = StepStatus.COMPLETED
         await event_queue.put(StepEvent(

@@ -307,41 +307,19 @@ public final class TTSService: TTSServiceProtocol, @unchecked Sendable {
 
     /// Send a clause to the Core over IPC and collect the PCM chunks.
     ///
-    /// Protocol: the shell sends the clause as a `TurnRequest` (text-only,
-    /// no audio features, empty turnId scoped to this clause). The Core
-    /// streams back `ServerMessage.ttsAudioChunk` messages until `isLast`.
+    /// Protocol: TTS audio is already being sent automatically by the Python
+    /// Core when it generates responses. The Swift side should NOT try to
+    /// request additional TTS synthesis - that would create a loop.
     ///
-    /// In production this relies on a dedicated TTS-only IPC call; for now
-    /// we re-use the existing `ClientMessage.turnRequest` path with a
-    /// synthetic `HAKITurnRequest` containing the clause text as the
-    /// transcript (no STT round-trip needed).
+    /// For now, we skip the IPC path and use local synthesis since the Python
+    /// side handles TTS synthesis and playback directly via the main IPC stream.
     private func synthesiseViaIPC(clause: String, client: any IPCClientProtocol) async throws -> Data {
-        // Build a minimal turn request for TTS-only synthesis.
-        let request = HAKITurnRequest(
-            turnId: "tts-\(UUID().uuidString)",
-            transcript: clause,
-            languageComposition: "english",
-            audioFeatures: HAKIAudioFeatures(pitchHz: 0, energyDb: 0, durationMs: 0)
-        )
-
-        try await client.send(.turnRequest(request))
-
-        // Collect TTS audio chunks from the inbound stream.
-        var audioData = Data()
-        for await message in client.inbound {
-            switch message {
-            case .ttsAudioChunk(let chunk):
-                audioData.append(chunk.samples)
-                if chunk.isLast { break }
-            case .error(let msg):
-                throw TTSError.ipcUnavailable(msg)
-            default:
-                continue
-            }
-        }
-
-        guard !audioData.isEmpty else { throw TTSError.emptySynthesis }
-        return audioData
+        // The Python Core already handles TTS synthesis and sends audio chunks
+        // via the main inbound stream. Those chunks are processed by AppDelegate.
+        // This method should not be called during the normal flow.
+        //
+        // Fall back to local synthesis for now.
+        throw TTSError.ipcUnavailable("IPC TTS path is disabled - Core handles TTS directly")
     }
 
     /// Synthesise a clause locally using `AVSpeechSynthesizer`.
@@ -508,13 +486,11 @@ public final class TTSService: TTSServiceProtocol, @unchecked Sendable {
                 interleaved: false
             )
         )
-        do {
-            try engine.start()
-            engineStarted = true
-        } catch {
-            print("[TTSService] Failed to start audio engine: \(error). IPC TTS playback will be unavailable.")
-            // Local AVSpeechSynthesizer will still work as a fallback.
-        }
+        // NOTE: Do NOT start the engine here. The Python Core handles TTS
+        // synthesis and sends audio via the main IPC stream to CoreAudioPlayer,
+        // which owns the audio hardware. Starting a second AVAudioEngine here
+        // would conflict with CoreAudioPlayer's engine and silence all output.
+        // The local AVSpeechSynthesizer fallback still works without an engine.
     }
 }
 

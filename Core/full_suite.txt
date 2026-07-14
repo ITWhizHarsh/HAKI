@@ -1,0 +1,52 @@
+........................................................................ [  6%]
+........................FF.............................................. [ 13%]
+........................................................................ [ 20%]
+........................................................................ [ 27%]
+........................................................................ [ 34%]
+........................................................................ [ 40%]
+........................................................................ [ 47%]
+........................................................................ [ 54%]
+........................................................................ [ 61%]
+........................................................................ [ 68%]
+........................................................................ [ 75%]
+........................................................................ [ 81%]
+........................................................................ [ 88%]
+........................................................................ [ 95%]
+................................................                         [100%]
+=================================== FAILURES ===================================
+____________________ TestOpenTabs.test_successful_tab_open _____________________
+tests/test_cdp_actuator.py:244: in test_successful_tab_open
+    assert result.success is True
+E   assert False is True
+E    +  where False = ActuatorResult(success=False, error_type='failed', detail="'coroutine' object does not support the asynchronous context manager protocol").success
+------------------------------ Captured log call -------------------------------
+ERROR    core.execution.cdp_actuator:cdp_actuator.py:199 CDPWebActuator.open_tabs: unexpected error: 'coroutine' object does not support the asynchronous context manager protocol
+________ TestOpenTabs.test_connection_error_raises_website_unreachable _________
+tests/test_cdp_actuator.py:259: in test_connection_error_raises_website_unreachable
+    with pytest.raises(WebsiteUnreachableError):
+E   Failed: DID NOT RAISE <class 'core.execution.errors.WebsiteUnreachableError'>
+------------------------------ Captured log call -------------------------------
+ERROR    core.execution.cdp_actuator:cdp_actuator.py:199 CDPWebActuator.open_tabs: unexpected error: 'coroutine' object does not support the asynchronous context manager protocol
+=============================== warnings summary ===============================
+tests/test_cdp_actuator.py::TestOpenTabs::test_successful_tab_open
+tests/test_cdp_actuator.py::TestOpenTabs::test_connection_error_raises_website_unreachable
+tests/test_cdp_actuator.py::TestOpenTabs::test_non_200_status_returns_failed
+  /Users/harshkumarroy/Downloads/HKR/HAKI/Core/core/execution/cdp_actuator.py:181: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    async with session.get(tab_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_haki_brain_conversations.py::test_unprocessed_logs_picked_up_in_order
+  /Users/harshkumarroy/Downloads/HKR/HAKI/Core/.venv/lib/python3.11/site-packages/torch/jit/_script.py:1488: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+tests/test_haki_brain_conversations.py::test_unprocessed_logs_picked_up_in_order
+  <frozen importlib._bootstrap>:241: DeprecationWarning: builtin type SwigPyPacked has no __module__ attribute
+
+tests/test_haki_brain_conversations.py::test_unprocessed_logs_picked_up_in_order
+  <frozen importlib._bootstrap>:241: DeprecationWarning: builtin type SwigPyObject has no __module__ attribute
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_cdp_actuator.py::TestOpenTabs::test_successful_tab_open - a...
+FAILED tests/test_cdp_actuator.py::TestOpenTabs::test_connection_error_raises_website_unreachable

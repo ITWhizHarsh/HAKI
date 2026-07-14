@@ -17,9 +17,14 @@ import AppKit
 // Create and start the application on the main thread.
 // NSApplicationMain is called from here because we use a SwiftPM executable target
 // (which does not support @NSApplicationMain attribute in a library target).
-autoreleasepool {
-    let app = NSApplication.shared
-    let delegate = AppDelegate()
-    app.delegate = delegate
-    app.run()
+//
+// We use MainActor.assumeIsolated because this entry point runs on the main
+// thread before the run loop starts; the assumption is always valid here.
+MainActor.assumeIsolated {
+    autoreleasepool {
+        let app = NSApplication.shared
+        let delegate = AppDelegate()
+        app.delegate = delegate
+        app.run()
+    }
 }

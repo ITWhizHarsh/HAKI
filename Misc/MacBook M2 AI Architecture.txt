@@ -1,0 +1,187 @@
+﻿Architectural Blueprint: Hyper-Optimised Local AI Stack for macOS (HAKI)
+The deployment of a continuously listening, localised artificial intelligence orchestration system on severely constrained edge hardware represents one of the most complex optimisation challenges in modern computing. The target computational environment—a MacBook Air M2 equipped with exactly 8GB of Unified Memory Architecture (UMA)—imposes unyielding architectural limitations. In macOS, the Darwin kernel (kernel_task), WindowServer, and standard background daemons continuously occupy approximately 2.5GB to 3.0GB of RAM. The addition of active Integrated Development Environments (IDEs) such as Xcode or Visual Studio Code further encroaches upon the available footprint. To prevent the operating system from aggressively paging memory to the Solid State Drive (SSD)—a scenario that inevitably causes devastating latency spikes, application instability, and accelerated hardware degradation—the entire Heuristic Augmented Knowledge Interface (HAKI) stack must operate strictly beneath a 3.5GB active memory ceiling.
+Achieving this requires the total abandonment of homogeneous compute paradigms. The macOS UMA allows the Central Processing Unit (CPU), Metal Graphics Processing Unit (GPU), and the Apple Neural Engine (ANE) to share a single memory pool without zero-copy overhead1. However, saturating the Metal GPU with simultaneous Large Language Model (LLM) generation, Text-to-Speech (TTS), and Speech-to-Text (STT) tasks will exhaust memory bandwidth and induce thermal throttling on a fanless machine. The optimal architecture must enforce strict heterogeneous compute scheduling: offloading sensory pipelines (STT and TTS) to the ANE via CoreML, dedicating the Metal GPU exclusively to the agentic LLMs via the Apple MLX framework, and leveraging the CPU for lightweight orchestration, embedding generation, and acoustic feature extraction2.
+The ensuing report exhausts the absolute best-in-class, hyper-optimised models available, tailored specifically for the 8GB Apple Silicon constraints, resolving the exact parameters required for the HAKI ecosystem.
+1. The Automation / OS Agent Brain (Local LLM)
+The primary orchestrator of the HAKI system must interpret user intent, engage in multi-step logical synthesis, and output deterministic, strictly typed JSON to drive Command_Plan execution. Acting as the Mac_Controller, it requires an agentic proficiency that mirrors the capabilities of the Gemini CLI OS agent workflows—utilising ReAct (Reason and Act) loops and Model Context Protocol (MCP) servers to manipulate built-in tools, macOS Accessibility (AX) APIs, AppleScript, and the Arc browser via the Chrome DevTools Protocol (CDP)4. This operational burden must be shouldered by a model within a constrained 3B to 4B parameter envelope.
+Selected Architecture: Salesforce xLAM-2-3b-fc-r
+* Repository / Model Name: mlx-community/xLAM-2-3b-fc-r-4bit
+* Estimated RAM Footprint: ~1.85 GB
+* Native Apple MLX Support: Fully supported via mlx-lm and vllm-mlx.
+Architectural Evaluations
+The Salesforce xLAM-2 family represents a paradigm shift in small-parameter Large Action Models (LAMs)6. Standard instruction-tuned models in the 3B to 4B class, such as the generalist Llama-3.2-3B or Qwen-2.5-3B, exhibit a measurable failure mode in local agentic loops: there is a high discrepancy between the model recognising the necessity for a tool and successfully emitting the precise tool-call tokens. Empirical evaluations show end-to-end mismatch rates running from 26.5% to 54.0% on complex arithmetic and factual routing tasks for 3B-class models7.
+The xLAM-2-3b-fc-r entirely mitigates this deficiency. It is explicitly fine-tuned for function calling and multi-turn agentic workflows using the APIGen-MT framework, which curates synthetic training data via simulated agent-human interactions6. On the Berkeley Function-Calling Leaderboard (BFCL v3), the 3B variant achieves an overall accuracy of 64.74% in greedy decoding, outperforming generalist base models in its parameter class and demonstrating exceptional multi-turn tool stability10.
+For deployment on the M2 chip, 4-bit quantisation via the Apple MLX framework is mandatory. A 3-billion parameter model stored in 16-bit precision (FP16) requires roughly 6.0GB of memory. By applying 4-bit quantisation, the model weights are compressed to approximately 1.5GB8. When accounting for the KV (Key-Value) cache required for an 8k context window and the MLX runtime overhead during inference, the active memory footprint stabilises at approximately 1.85GB.
+Implementation Nuances on Apple Silicon
+To integrate xLAM-2-3b-fc-r-4bit seamlessly with the HAKI Swift shell, the Python core should host the model using vllm-mlx or a custom mlx_lm.server configuration11. The model supports continuous batching and automatic tool-choice parsing. By initialising the inference server with the --enable-auto-tool-choice flag, the engine can automatically parse the generated outputs into structured JSON formats11. The auto-parser inherently prioritises structural hierarchies, attempting Mistral tags, followed by Qwen brackets, and finally raw JSON11.
+Furthermore, the underlying MLX framework utilises custom Metal shaders to execute matrix multiplications (GEMM) directly on the M2's GPU, sharing the 1.85GB memory buffer with the CPU without data duplication1. Compared to llama.cpp (Ollama), which relies on generic GGML kernels, the MLX runtime yields a significant decoding throughput advantage, executing local Llama-architecture and Qwen-architecture models roughly 1.3x to 2.4x faster on Apple Silicon hardware13. This zero-copy memory mapping ensures the orchestrator receives tool-call chunks rapidly, which is vital for driving real-time macOS automations12.
+2. The Emergency Fallback Brain (Local LLM)
+HAKI necessitates a secondary fallback LLM to handle basic conversational routing and Retrieval-Augmented Generation (RAG) when external APIs (such as Groq or Gemini) experience outages, or when the Macintosh is physically disconnected from the network. This model must be stored locally but consume a virtually imperceptible amount of memory, operating as a cold-standby that can be instantiated instantly into the UMA.
+Selected Architecture: PrismML Bonsai-8B
+* Repository / Model Name: prism-ml/Bonsai-8B-mlx-1bit
+* Alternative Sub-2GB Option: prism-ml/Ternary-Bonsai-8B-mlx-2bit
+* Estimated RAM Footprint: ~1.28 GB (1-bit) / ~1.75 GB (1.58-bit)
+* Native Apple MLX Support: Supported via a specialised 1-bit kernel fork of MLX.
+Architectural Evaluations
+The conventional approach to reducing LLM memory footprints involves 4-bit or 8-bit Post-Training Quantisation (PTQ). However, PrismML's Bonsai-8B introduces a radical end-to-end 1-bit quantisation schema, compressing an 8.19-billion parameter model (based on the Qwen3 architecture) into an astonishing 1.15 GB to 1.28 GB deployed footprint16.
+The model utilises an MLX-native 1-bit g128 quantisation format. In this architecture, each weight is represented by a single bit where 0 maps to a negative scale factor (-scale) and 1 maps to a positive scale factor (+scale)16. Every group of 128 weights shares a single FP16 scale factor. Because MLX's native structures expect both a scale and a bias, the model packs the weights by setting the MLX scale to twice the original scale and the bias to the negative original scale16. This maintains an effective storage size of just 1.25 bits per weight, achieving a 12.8x reduction in size compared to FP1616.
+Despite this extreme compression, Bonsai-8B achieves an average benchmark score of 70.5 across major datasets, matching the performance of standard 16-bit 8B models that require 16GB of RAM16. The evaluation of "intelligence density" is paramount here: Bonsai 8B scores 1.06 benchmark points per gigabyte of RAM, compared to 0.10 for its FP16 counterparts15. For environments requiring slightly higher coherence, the 1.58-bit Ternary-Bonsai-8B trades an additional ~600MB of RAM (totalling ~1.75GB) for a 5-point increase in benchmark stability (75.5)20.
+Performance and RAG Viability on Apple Silicon
+For RAG operations, linguistic coherence and context retention are critical. The Qwen3 base architecture provides a 65,536-token context window, leveraging Grouped Query Attention (GQA) and Rotary Position Embeddings (RoPE)16. While 1-bit models can exhibit degradation in highly complex, multi-step mathematical operations, their linguistic coherence, coding stability, and ability to synthesise retrieved text remain robustly practical for a fallback agent19.
+On the Apple M2 equivalent architecture, the performance metrics of Bonsai-8B are highly advantageous. The model executes prompt processing (prefill) at over 472 tokens per second and decoding at up to 131 tokens per second via MLX16. Testing on constrained devices like the iPhone 17 Pro Max yields 44 tokens per second, confirming its viability on low-power chips15. More importantly, the energy efficiency is drastically improved, consuming only 0.074 milliwatt-hours per token—roughly 5.6 times more efficient than standard FP16 models16. This low thermal and power footprint prevents the MacBook Air M2 from thermal throttling during extended offline RAG synthesis.
+3. Ultra-Low Latency Streaming STT (Speech-to-Text)
+To function as a truly interactive assistant, the HAKI pipeline demands an STT engine capable of processing a continuous microphone stream, accurately detecting Voice Activity (VAD), and emitting partial transcripts with a strict time-to-first-token (TTFT) budget under 300ms. Crucially, this component must execute without interrupting the Metal GPU, which is dedicated to the Agent LLM.
+Selected Architecture: WhisperKit (Apple Neural Engine)
+* Repository / Model Name: argmaxinc/WhisperKit (Using small or tiny models)
+* Estimated RAM Footprint: ~150 MB (tiny) to ~280 MB (small)
+* Native Apple MLX Support: N/A (Utilises CoreML natively).
+Architectural Evaluations: CoreML vs. MLX-Whisper vs. Moonshine v2
+The local STT landscape presents a fundamental hardware contention issue. MLX-Whisper provides excellent throughput by mapping the Whisper architecture to Apple's Metal GPU1. However, deploying MLX-Whisper alongside the OS Agent LLM (xLAM-2) creates extreme memory bandwidth contention, as both processes continuously poll the GPU.
+Conversely, Moonshine v2 offers a highly compelling algorithmic approach for latency-critical streaming. It replaces the quadratic complexity of full-attention Transformers with an ergodic streaming encoder employing sliding-window self-attention22. This bounded memory approach allows the Moonshine Medium model to achieve a 107ms encode latency on standard CPUs25. However, Moonshine's reliance on CPU cycles or ONNX INT8 quantization26 would compete with the Python orchestrator's event loops.
+WhisperKit provides the definitive solution for macOS edge deployments by escaping the CPU/GPU contention altogether. Written entirely in Swift, WhisperKit leverages CoreML to offload the STT pipeline—Mel-spectrogram extraction, audio encoding, and text decoding—directly to the Apple Neural Engine (ANE)3. By explicitly configuring the ModelComputeOptions to use .cpuAndNeuralEngine, the transcription process is physically isolated on the ANE hardware block3.
+Latency Optimisation and Memory Constraints
+The memory management of WhisperKit is aggressively tuned for edge devices. The small Whisper model (244M parameters) or the heavily compressed tiny model (39M parameters) maintain a loaded memory footprint between 150MB and 280MB27. To guarantee the strict 300ms latency requirement, WhisperKit implements KV cache prefilling, which reduces first-token latency by up to 3x by preloading common decoder states into the ANE27.
+Furthermore, WhisperKit avoids the "encode-the-whole-utterance" latency penalty by utilising a VAD chunking strategy, processing audio sequentially in minor chunks rather than waiting to compile full 30-second buffers27. This allows for near-instantaneous partial transcript emissions. Consequently, when the user ceases vocalisation, the Python orchestrator can trigger logical actions upon exactly 800ms of silence without being bottlenecked by trailing transcription lag.
+4. Streaming TTS with Code-Switching (Text-to-Speech)
+The Language_Engine of HAKI dictates native acoustic handling of English, Hindi, and Hinglish without explicit manual language prompting. The TTS module must seamlessly switch phonemes mid-sentence (code-switching) and support a rapid "pop_sentences" streaming pattern, where text chunks are synthesised and flushed to the AVAudioEngine immediately to minimise perceived latency.
+Selected Architecture: Kokoro-82M (CoreML Port)
+* Repository / Model Name: aufklarer/Kokoro-82M-CoreML
+* Estimated RAM Footprint: ~170 MB
+* Native Apple MLX Support: N/A (Utilises CoreML for ANE execution).
+Architectural Evaluations
+Modern commercial TTS models (e.g., ElevenLabs APIs) introduce unacceptable network latency (often 300-500ms API lag), while local open-weight autoregressive models (e.g., Qwen3-TTS or CosyVoice3) generate tokens step-by-step but require massive VRAM taxes, often exceeding 1.2GB to 1.7GB2.
+Kokoro-82M subverts this trend. At just 82 million parameters, it is a non-autoregressive model built upon the StyleTTS 2 lineage, substituting massive diffusion steps with an efficient ISTFTNet vocoder2. The official MLX deployments are viable, but the CoreML conversion of Kokoro (aufklarer/Kokoro-82M-CoreML) is paramount for the HAKI stack. Similar to WhisperKit, it executes entirely on the Apple Neural Engine (ANE), ensuring the Metal GPU remains unburdened2.
+The model operates via a highly deterministic, 3-stage computational pipeline that requires no sampling loops:
+1. Duration Model (duration.mlmodelc): Maps phoneme tokens and voice embeddings to duration and prosody features.
+2. Prosody Model (prosody.mlmodelc): Predicts fundamental frequency (F0) pitch and acoustic noise variations.
+3. Decoder (decoder_*.mlmodelc): Synthesises the final 24 kHz audio waveform using enumerated decoder buckets (e.g., decoder_5s for max 200 frames)2.
+This deterministic forward-pass architecture allows the system to synthesise audio significantly faster than real-time (Real-Time Factor ~0.7)2. As a result, the Python core can feed single sentences into the engine and receive playable audio buffers almost instantaneously.
+Hinglish Phonemisation Mechanics
+For Hinglish code-switching, Kokoro-82M implements a robust three-tier grapheme-to-phoneme (G2P) pipeline based on the misaki library2. Standard English lexical items are processed via pronunciation dictionary lookups and suffix stemming. Out-of-vocabulary words—highly common in romanised Hinglish (e.g., "Kyakarrhe ho?")—are handled by a fallback neural BART G2P encoder-decoder or the espeak-ng phonetic engine2.
+The CoreML repository includes 54 preset voice embeddings natively2. By analysing the incoming text stream in the Python orchestrator for language patterns, HAKI can dynamically assign the appropriate 256-dimensional voice embedding—English voices (e.g., af_heart, am_michael) or Hindi voices (e.g., hf_alpha, hm_omega)—to specific sentence chunks. The phonetic strings are passed to the ANE, resulting in seamless, code-switched audio generation without altering the baseline 170MB memory footprint.
+5. Audio Mood / Prosody Classifier
+A highly responsive personal AI must interpret non-verbal acoustic cues—such as pitch, volume amplitude, and conversational pacing—to deduce the user's primary emotional state (angry, sad, happy, neutral). This classifier must act as a continuous background listener alongside the STT, operating with an imperceptible computational footprint.
+Selected Architecture: Lightweight Mel-Spectrogram CNN
+* Target Architecture: Custom 2D Convolutional Neural Network (CNN) / ResNet-50 variant.
+* Estimated RAM Footprint: < 50 MB
+* Native Apple MLX Support: Execution via ONNX Runtime (CPU).
+Architectural Evaluations
+Speech Emotion Recognition (SER) systems generally bypass raw audio waveforms in favour of extracting distinct acoustic features. The most efficient methodology involves converting 1.0 to 2.0-second audio chunks into a Mel-frequency cepstral coefficients (MFCC) array or a Mel-Spectrogram—a visual representation of the spectrum of frequencies mapped to the non-linear mel scale over time33.
+While foundation audio models like Wav2Vec 2.0 or HuBERT offer high generalisation accuracy, they introduce parameter overheads that severely violate the 100MB constraint35. A highly optimised edge approach leverages a lightweight 2D CNN or a compressed Residual Network (ResNet) to perform visual classification directly on the generated Mel-Spectrogram34. Implementations show that dividing the spectrogram into sub-spectrograms along the frequency axis, then passing them through a ResNet augmented with a basic attention mechanism, achieves high classification accuracy for core emotions without demanding deep network structures33.
+Recent advancements in edge-privacy frameworks, such as the SpeechShield project, demonstrate that specialised audio classifiers can operate in less than 100MB of memory while processing audio in real-time on hardware as limited as a 64-bit Raspberry Pi 4B38.
+For the HAKI implementation, the Python orchestrator will compute the Mel-Spectrogram using highly optimised CPU vector libraries (such as librosa or native AVFoundation transforms). The resulting tensor is passed through an INT8-quantised CNN exported to the ONNX format. This entirely circumvents the LLM stack, yielding a primary mood and a probabilistic confidence score array in under 10 milliseconds, consuming less than 50MB of system RAM34.
+6. Hinglish-Native Sentence Embeddings (For RAG)
+The HAKI assistant must maintain persistent contextual awareness by retrieving local Markdown notes from an Obsidian vault. This necessitates an embedding model capable of accurately mapping English, Hindi, and romanised Hinglish into a unified vector space, interfacing directly with a local ChromaDB instance.
+Selected Architecture: IBM granite-embedding-97m-multilingual-r2
+* Repository / Model Name: ibm-granite/granite-embedding-97m-multilingual-r2
+* Estimated RAM Footprint: ~97 MB (INT8) / ~194 MB (FP16)
+* Native Apple MLX Support: Fully compatible via sentence-transformers (CPU/Metal).
+Architectural Evaluations
+Embedding code-mixed languages like Hinglish presents unique semantic challenges. Models trained exclusively on monolingual datasets fail to capture the socio-pragmatic combinations of Hindi grammar interlaced with English vocabulary41. While region-specific models like L3Cube's HingBERT series explicitly train on Hindi-English code-mixed data from Twitter, they are built on older, heavier BERT architectures (~110M+ parameters) restricted by narrow 512-token context windows44.
+IBM's recently released granite-embedding-97m-multilingual-r2 represents a state-of-the-art breakthrough in compact multilingual embeddings47. With a mere 97 million parameters, it achieves an MTEB Multilingual Retrieval score of 60.3 across 18 languages, outperforming the previous standard (multilingual-e5-small, which scored 50.9) by a massive 9.4 points47. The model supports over 200 languages with enhanced cross-lingual training for 52 languages, ensuring highly robust mapping of Hindi and English semantics into a shared 384-dimensional vector space47.
+Context Expansion and Tokenisation Optimisation
+The underlying architecture of the Granite-R2 generation shifts from XLM-RoBERTa to ModernBERT47. This architectural upgrade introduces alternating attention lengths to accelerate processing, SiLU activations, and Rotary Position Embeddings (RoPE)47. Crucially, the implementation of RoPE expands the context window from a mere 512 tokens to an immense 32,768 tokens47. For an Obsidian vault RAG pipeline, this expanded context is invaluable, allowing entire Markdown documents or lengthy multi-turn conversations to be embedded as single, cohesive vectors rather than fragmented chunks.
+Furthermore, the model utilises a custom tokenizer pruned directly from the GPT-OSS vocabulary down to 180,000 tokens47. This aggressive tokenizer pruning is the specific mechanical reason the embedding table's parameter footprint remains so small, ensuring the model size stays well under the 200MB limit. Integration is remarkably straightforward: the model acts as a drop-in replacement within the Python sentence-transformers library, feeding rapidly into a local ChromaDB instance47.
+7. Unified Hardware Scheduling and Memory Matrix
+The viability of the HAKI architecture rests entirely on the orchestration of the macOS Unified Memory Architecture. By strategically compiling specific models for dedicated hardware blocks, the system avoids memory bandwidth contention and prevents swap threshold breaches, effectively turning a constrained 8GB machine into a highly capable edge AI server.
+Final System Memory Allocation Matrix
+HAKI Component
+	Selected Model
+	Compute Target
+	RAM Footprint
+	Operational Profile
+	OS Agent LLM
+	xLAM-2-3b-fc-r (4-bit)
+	Metal GPU (MLX)
+	~1.85 GB
+	Active during task execution; demands high GPU memory bandwidth.
+	Fallback LLM
+	Bonsai-8B (1-bit)
+	Metal GPU (MLX)
+	~1.28 GB
+	Cold-standby; dynamically swapped with OS Agent when disconnected.
+	Streaming STT
+	WhisperKit (Tiny)
+	ANE (CoreML)
+	~0.15 GB
+	Always-on continuous listening; offloaded entirely to Neural Engine.
+	Streaming TTS
+	Kokoro-82M (CoreML)
+	ANE (CoreML)
+	~0.17 GB
+	Triggered on text emission; runs concurrently on Neural Engine.
+	Mood Classifier
+	Mel-Spec CNN
+	CPU / ONNX
+	~0.05 GB
+	Runs background inference on auditory chunks via CPU vector math.
+	Embeddings
+	Granite-97M-R2
+	CPU
+	~0.15 GB
+	Triggered dynamically during vault indexing or RAG context retrieval.
+	Orchestrator
+	Swift + Python Core
+	CPU
+	~0.40 GB
+	Manages gRPC/UNIX sockets, memory buffers, and macOS API routing.
+	Total Active
+	Concurrent Stack
+	Heterogeneous
+	~2.77 GB
+	Leaves ~0.73 GB safety buffer beneath the 3.5 GB threshold.
+	Note: The OS Agent LLM and the Fallback LLM are designed to be mutually exclusive in active memory. The total active footprint calculations assume the 1.85 GB Agent LLM is the loaded component.
+Conclusion
+The construction of HAKI on an 8GB Apple Silicon M2 is a masterclass in edge computing engineering. By refusing to run monolithic, generalist models and instead selecting highly specialised, purpose-built architectures, the system circumvents severe hardware limitations. The xLAM-2-3b-fc-r provides robust, APIGen-MT trained JSON tool calling tailored for agentic execution8, while PrismML's Bonsai-8B leverages extreme 1-bit quantisation for unmatched offline intelligence density15.
+Critically, the sensory pipelines (WhisperKit and Kokoro-82M) are offloaded to the Apple Neural Engine via CoreML, physically isolating their memory bandwidth from the LLM's Metal GPU operations2. Combined with the ModernBERT-powered Granite-97M-R2 for vast-context Hinglish embeddings49, HAKI achieves a hyper-optimised, localised AI ecosystem that guarantees sub-300ms operational latency without ever triggering macOS SSD memory swap algorithms.
+Works cited
+1. Cactus vs MLX: Cross-Platform AI vs Apple Silicon ML Framework, https://cactuscompute.com/compare/cactus-vs-mlx
+2. Kokoro-82M TTS — Full Voice List (50 voices, 10 languages, CoreML, iOS) | Soniqo, https://soniqo.audio/guides/kokoro
+3. skulkworks/foxsay: Open source "Speech to Text" native mac app. Metal accelerated, Nvidia Parakeet + local AI models - GitHub, https://github.com/skulkworks/foxsay
+4. Gemini CLI - Google Cloud Documentation, https://docs.cloud.google.com/gemini/docs/codeassist/gemini-cli
+5. Hands-on with Gemini CLI - Google Codelabs, https://codelabs.developers.google.com/gemini-cli-hands-on
+6. Salesforce/Llama-xLAM-2-70b-fc-r - Hugging Face, https://huggingface.co/Salesforce/Llama-xLAM-2-70b-fc-r
+7. Your Local Agent Knows When It Needs a Tool. Whether It Calls One Is a Different Question. - Medium, https://medium.com/@michael.hannecke/your-local-agent-knows-when-it-needs-a-tool-whether-it-calls-one-is-a-different-question-a2dae65ef84e
+8. Salesforce/xLAM-2-1b-fc-r-gguf - Hugging Face, https://huggingface.co/Salesforce/xLAM-2-1b-fc-r-gguf
+9. Salesforce/xLAM-2-3b-fc-r - Hugging Face, https://huggingface.co/Salesforce/xLAM-2-3b-fc-r
+10. ToolRM: Outcome Reward Models for Tool-Calling Large Language Models - arXiv, https://arxiv.org/html/2509.11963v1
+11. tool-calling.md - waybarrios/vllm-mlx - GitHub, https://github.com/waybarrios/vllm-mlx/blob/main/docs/guides/tool-calling.md
+12. Building a Sovereign Coding Agent on Apple Silicon with Pi and MLX-Swift - Medium, https://medium.com/@michael.hannecke/building-a-sovereign-coding-agent-on-apple-silicon-with-pi-and-mlx-swift-ef9bb23cafe2
+13. mlxcel: A Rust-Native Inference Engine for Apple Silicon, Tested on My M1 Max, https://blog.kubesimplify.com/mlxcel-rust-native-inference-engine-tested-on-m1-max
+14. GitHub - raullenchai/Rapid-MLX: The fastest local AI engine for Apple Silicon. 4.2x faster than Ollama, 0.08s cached TTFT, 100% tool calling. 17 tool parsers, prompt cache, reasoning separation, cloud routing. Drop-in OpenAI replacement. Works with Claude Code, Cursor, Aider., https://github.com/raullenchai/Rapid-MLX
+15. Caltech Research Produces a 1-Bit LLM That Fits on Any Smartphone While Matching Full-Precision Competitors - David Borish, https://www.davidborish.com/post/caltech-research-produces-a-1-bit-llm-that-fits-on-any-smartphone-while-matching-full-precision-comp
+16. prism-ml/Bonsai-8B-mlx-1bit - Hugging Face, https://huggingface.co/prism-ml/Bonsai-8B-mlx-1bit
+17. prism-ml/Bonsai-8B-gguf - Hugging Face, https://huggingface.co/prism-ml/Bonsai-8B-gguf
+18. PrismML — Announcing 1-bit Bonsai: The First Commercially Viable 1-bit LLMs - Reddit, https://www.reddit.com/r/LocalLLaMA/comments/1s90wo4/prismml_announcing_1bit_bonsai_the_first/
+19. A Thorough Explanation of the LLM Model 'Bonsai': The Future of Edge AI Brought by the 1-bit Revolution, or Perhaps a Glimpse of a Savior for Budget PCs｜ゆいまる - note, https://note.com/humble_bobcat51/n/n61ac9247ab6c?hl=en-US
+20. A Thorough Investigation of Ternary Bonsai: The New Era of 'Memory-Efficient x High-Performance' LLMs Realized at 1.58-bit is Becoming Increasingly Practical!｜ゆいまる - note, https://note.com/humble_bobcat51/n/n14cb0c0898b2?hl=en
+21. OxiBonsai is a zero-FFI, zero-C/C++ inference engine for PrismML's sub-2-bit Bonsai family — both the 1-bit line (Q1_0_g128) and the ternary line (TQ2_0_g128). It runs on CPU (SIMD), Apple Silicon (Metal), and NVIDIA (CUDA) without depending on llama.cpp, BLAS, or any C/Fortran runtime. · GitHub, https://github.com/cool-japan/oxibonsai
+22. Moonshine v2: Ergodic Streaming Encoder ASR for Latency-Critical Speech Applications, https://www.researchgate.net/publication/400742422_Moonshine_v2_Ergodic_Streaming_Encoder_ASR_for_Latency-Critical_Speech_Applications
+23. Moonshine v2: Ergodic Streaming Encoder ASR for Latency-Critical Speech Applications, https://arxiv.org/html/2602.12241v1
+24. Moonshine v2: Ergodic Streaming Encoder ASR for Latency-Critical Speech Applications - arXiv, https://arxiv.org/pdf/2602.12241
+25. Moonshine vs Whisper ASR: Real-Time Speech Recognition Benchmark (2026) | AI Blog API for Developers - ModelsLab, https://modelslab.com/blog/audio-generation/moonshine-vs-whisper-asr-real-time-speech-2026
+26. Mazino0/moonshine-streaming-small-onnx - Hugging Face, https://huggingface.co/Mazino0/moonshine-streaming-small-onnx
+27. Memory Management - WhisperKit - Introduction - Starter Kit, https://argmaxinc-whisperkit.mintlify.app/advanced/memory-management
+28. Memory leak when using ModelComputeOptions `.cpuAndGPU` with Turbo model on m1 · Issue #265 · argmaxinc/WhisperKit - GitHub, https://github.com/argmaxinc/WhisperKit/issues/265
+29. ElevenLabs Alternatives: The Best Options for Developers Building Realtime AI (2026), https://inworld.ai/resources/elevenlabs-alternatives
+30. The 82-Million-Parameter Voice That Punches Way Above Its Weight | by Simbarashe Timothy Motsi | Jun, 2026 | Medium, https://medium.com/@simbatmotsi/the-82-million-parameter-voice-that-punches-way-above-its-weight-5e53ca371101
+31. resource material on digital literacy and e-learning for teachers and teacher educators, https://www.researchgate.net/publication/356775622_RESOURCE_MATERIAL_ON_DIGITAL_LITERACY_AND_E-LEARNING_FOR_TEACHERS_AND_TEACHER_EDUCATORS
+32. Generate speech with Kokoro - Baseten Docs, https://docs.baseten.co/examples/text-to-speech
+33. Multi-Input Speech Emotion Recognition Model Using Mel Spectrogram and GeMAPS, https://pmc.ncbi.nlm.nih.gov/articles/PMC9920472/
+34. Deep Learning for Speech Emotion Recognition: A CNN Approach Utilizing Mel Spectrograms - arXiv, https://arxiv.org/html/2503.19677v1
+35. Speech To Text Open Source: 21 Best Projects 2026 - QCall.ai, https://qcall.ai/speech-to-text-open-source
+36. Hybrid-Module Transformer: enhancing speech emotion recognition with HuBERT, LSTM, and ResNet-50 - PeerJ, https://peerj.com/articles/cs-3292.pdf
+37. (PDF) A Multi-Feature Fusion Speech Emotion Recognition Method Based on Frequency Band Division and Improved Residual Network - ResearchGate, https://www.researchgate.net/publication/372733372_A_Multi-feature_Fusion_Speech_Emotion_Recognition_Method_Based_on_Frequency_Band_Division_and_Improved_Residual_Network
+38. arXiv:2502.01649v1 [eess.AS] 29 Jan 2025, https://arxiv.org/pdf/2502.01649?
+39. Safeguarding Privacy in Edge Speech Understanding with Tiny Foundation Models - arXiv, https://arxiv.org/pdf/2502.01649
+40. Safeguarding Privacy in Edge Speech Understanding with Tiny Foundation Models - arXiv, https://arxiv.org/html/2502.01649v2
+41. Communications of the ACM - November 2019, https://redes.fi-b.unam.mx/fi_acm/2019/communications201911-dl.pdf
+42. On Importance of Code-Mixed Embeddings for Hate Speech Identification - arXiv, https://arxiv.org/html/2411.18577v1
+43. arXiv:2411.18577v1 [cs.CL] 27 Nov 2024, https://arxiv.org/pdf/2411.18577?
+44. L3Cube-HingCorpus and HingBERT: A Code Mixed Hindi-English Dataset and BERT Language Models - ACL Anthology, https://aclanthology.org/2022.wildre-1.2/
+45. [2204.08398] L3Cube-HingCorpus and HingBERT: A Code Mixed Hindi-English Dataset and BERT Language Models - arXiv, https://arxiv.org/abs/2204.08398
+46. arXiv:2204.08398v1 [cs.CL] 18 Apr 2022, https://arxiv.org/pdf/2204.08398
+47. Granite Embedding Multilingual R2: Open Apache 2.0 Multilingual Embeddings with 32K Context — Best Sub-100M Retrieval Quality - Hugging Face, https://huggingface.co/blog/ibm-granite/granite-embedding-multilingual-r2
+48. Granite Embedding Multilingual R2 Models - arXiv, https://arxiv.org/html/2605.13521v1
+49. ibm-granite/granite-embedding-97m-multilingual-r2 - Hugging Face, https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2
+50. ibm-granite/granite-embedding-models - GitHub, https://github.com/ibm-granite/granite-embedding-models/

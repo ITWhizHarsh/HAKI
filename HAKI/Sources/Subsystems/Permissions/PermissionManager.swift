@@ -108,7 +108,7 @@ public protocol PermissionManagerProtocol: AnyObject, Sendable {
 ///
 /// Req 2.1–2.7, 21.15
 @MainActor
-public final class PermissionManager: ObservableObject, PermissionManagerProtocol {
+public final class PermissionManager: ObservableObject, @preconcurrency PermissionManagerProtocol {
 
     // MARK: - UserDefaults key
 
@@ -215,38 +215,29 @@ public final class PermissionManager: ObservableObject, PermissionManagerProtoco
         switch permission {
         case .screenRecording:
             if current == .undetermined {
-                // Ask the system to present the TCC alert.  The result
-                // comes back asynchronously; we don't need to observe it
-                // here — the revocation watcher will pick up the change.
-                // Req 2.1
                 CGRequestScreenCaptureAccess()
             } else {
-                // Already denied (or indeterminate after first denial) —
-                // open System Settings so the user can grant manually.
-                // Req 2.6
                 openSystemSettings(for: permission)
             }
 
         case .accessibility:
             if current == .undetermined {
-                // Presenting the AX prompt requires the option dictionary.
-                // `kAXTrustedCheckOptionPrompt = true` triggers the system
-                // dialog (Req 2.1).
                 let opts: NSDictionary = [
                     kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true
                 ]
                 _ = AXIsProcessTrustedWithOptions(opts)
             } else {
-                // Already handled; direct user to System Settings.  Req 2.6
                 openSystemSettings(for: permission)
             }
 
         case .automation:
-            // macOS does not provide an API to request Automation permission
-            // programmatically without an active Apple Event send.  Direct
-            // the user to System Settings in all cases.
-            // Req 2.1, 2.6
             openSystemSettings(for: permission)
+
+        case .microphone:
+            // Microphone permission is handled via AVCaptureDevice.requestAccess
+            // in the voice pipeline. Nothing to do here — the system prompt
+            // is shown automatically when the mic is first accessed.
+            break
         }
     }
 
@@ -348,39 +339,22 @@ public final class PermissionManager: ObservableObject, PermissionManagerProtoco
     nonisolated func currentTCCStatus(for permission: HAKIPermission) -> PermissionStatus {
         switch permission {
         case .screenRecording:
-            // CGPreflightScreenCaptureAccess() returns true when the app has
-            // been granted screen-recording permission and false when denied
-            // OR undetermined.  We treat both non-granted states as
-            // `.undetermined` on the first call (before the user has
-            // responded to the TCC prompt) and `.denied` once the prompt has
-            // been shown.  Since we cannot reliably distinguish the two via
-            // this API alone, we map `false` → `.undetermined` until the
-            // `requestPermission` flow has been triggered.
-            //
-            // In practice, after `CGRequestScreenCaptureAccess()` is called
-            // the returned value from `CGPreflightScreenCaptureAccess()` will
-            // be stable: `true` = granted, `false` = denied.
-            // Req 2.1
             return CGPreflightScreenCaptureAccess() ? .granted : .undetermined
 
         case .accessibility:
-            // AXIsProcessTrustedWithOptions with prompt=false checks the
-            // current AX trust state without triggering a system dialog.
-            // Req 2.1
             let opts: NSDictionary = [
                 kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false
             ]
             return AXIsProcessTrustedWithOptions(opts) ? .granted : .undetermined
 
         case .automation:
-            // There is no public API to check Automation permission without
-            // sending an actual Apple Event.  We use a known-safe no-op event
-            // to the Finder as a proxy.  If the event descriptor is accepted
-            // (kAEEventNotHandled is a valid handler-not-found, not a denial),
-            // we treat it as granted.  An `errAEEventNotPermitted` error
-            // (-1743) means the user has denied automation to Finder, which is
-            // a proxy for general automation being restricted.
             return automationPermissionStatus()
+
+        case .microphone:
+            // Microphone TCC status is managed by AVFoundation. We return
+            // .granted optimistically here since the voice pipeline handles
+            // the actual request via AVCaptureDevice.requestAccess.
+            return .granted
         }
     }
 

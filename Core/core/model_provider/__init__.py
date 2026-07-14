@@ -3,6 +3,7 @@ Model Provider sub-package.
 
 Owns the ModelProvider registry, CapabilityConfig, per-capability
 local / API backend resolution, disclosure gating, and failure handling.
+Also owns the real LLM router, STT engine, TTS engine, and embeddings engine.
 
 Design reference: Model Provider Abstraction.
 Requirements: 20.
@@ -33,8 +34,17 @@ from .model_provider import (
     # Factory
     create_default_registry_and_routers,
 )
+from .llm_router import LLMRouter, LLMRouterConfig, LLMTier, parse_mood_metadata
+from .stt_engine import STTEngine, TranscriptResult, STTEngineStatus
+from .tts_engine import TTSEngine, async_chunk_stream, chunk_stream
+from .embeddings_engine import (
+    EmbeddingsEngine,
+    MultilingualEmbeddingFunction,
+    get_chroma_client,
+)
 
 __all__ = [
+    # Model provider abstraction
     "Capability",
     "ProcessingMode",
     "ModelMode",
@@ -50,4 +60,21 @@ __all__ = [
     "ApiBackend",
     "BackendRouter",
     "create_default_registry_and_routers",
+    # LLM routing
+    "LLMRouter",
+    "LLMRouterConfig",
+    "LLMTier",
+    "parse_mood_metadata",
+    # STT
+    "STTEngine",
+    "TranscriptResult",
+    "STTEngineStatus",
+    # TTS
+    "TTSEngine",
+    "async_chunk_stream",
+    "chunk_stream",
+    # Embeddings
+    "EmbeddingsEngine",
+    "MultilingualEmbeddingFunction",
+    "get_chroma_client",
 ]

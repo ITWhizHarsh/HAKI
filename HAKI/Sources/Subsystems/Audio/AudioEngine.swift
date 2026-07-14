@@ -148,34 +148,45 @@ public final class LiveAudioEngine: AudioEngineProtocol, @unchecked Sendable {
         // macOS 14+: enable Voice Processing on the input node.
         // This routes audio through kAudioUnitSubType_VoiceProcessingIO which
         // applies hardware-accelerated AEC, noise suppression, and AGC.
+        // Non-fatal if unsupported — we fall back to plain capture without AEC.
         if #available(macOS 14, *) {
             if !inputNode.isVoiceProcessingEnabled {
                 do {
                     try inputNode.setVoiceProcessingEnabled(true)
+                    print("[LiveAudioEngine] Voice processing (AEC) enabled.")
                 } catch {
-                    // Non-fatal on hardware that doesn't support it (e.g. simulator).
-                    // Log and continue — AEC will simply be absent.
-                    print("[LiveAudioEngine] Voice processing (AEC) unavailable: \(error)")
+                    // Non-fatal — AEC simply won't be active.
+                    print("[LiveAudioEngine] Voice processing (AEC) unavailable: \(error). Continuing without AEC.")
                 }
+            }
+
+            // CRITICAL: by default the Voice Processing I/O unit ducks ALL other
+            // audio output (other apps AND HAKI's own TTS) to ~5% while the mic
+            // is active. Disable that ducking so HAKI's spoken responses are
+            // audible at full volume and the user's other audio isn't muted.
+            if #available(macOS 14, *) {
+                let duckCfg = AVAudioVoiceProcessingOtherAudioDuckingConfiguration(
+                    enableAdvancedDucking: false,
+                    duckingLevel: .min
+                )
+                inputNode.voiceProcessingOtherAudioDuckingConfiguration = duckCfg
+                print("[LiveAudioEngine] Voice-processing audio ducking set to minimum.")
             }
         }
 
-        // MARK: Capture format: 16 kHz, mono, 32-bit float (AVAudioEngine native)
-        // We convert to Int16 inside the tap callback.
-        guard let captureFormat = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: LiveAudioEngine.sampleRate,
-            channels: 1,
-            interleaved: false
-        ) else {
-            throw AudioEngineError.hardwareUnavailable
-        }
+        // MARK: Capture format
+        // Use the input node's *native* hardware format for the tap — forcing
+        // a non-native format (e.g. 16 kHz when hardware runs at 48 kHz) causes
+        // AVAudioEngine.start() to throw hardwareUnavailable on some Macs.
+        // We convert to 16-bit Int16 at 16 kHz inside the tap callback.
+        let nativeFormat = inputNode.inputFormat(forBus: 0)
+        print("[LiveAudioEngine] Hardware input format: \(nativeFormat)")
 
         // MARK: Install tap
         inputNode.installTap(
             onBus: 0,
-            bufferSize: LiveAudioEngine.tapBufferSize,
-            format: captureFormat
+            bufferSize: AVAudioFrameCount(nativeFormat.sampleRate * LiveAudioEngine.frameDuration),
+            format: nativeFormat
         ) { [weak self] buffer, time in
             self?.processTapBuffer(buffer, time: time)
         }
@@ -183,8 +194,10 @@ public final class LiveAudioEngine: AudioEngineProtocol, @unchecked Sendable {
         // MARK: Start engine
         do {
             try engine.start()
+            print("[LiveAudioEngine] AVAudioEngine started successfully.")
         } catch {
             inputNode.removeTap(onBus: 0)
+            print("[LiveAudioEngine] AVAudioEngine.start() failed: \(error)")
             throw AudioEngineError.hardwareUnavailable
         }
     }
@@ -211,46 +224,53 @@ public final class LiveAudioEngine: AudioEngineProtocol, @unchecked Sendable {
     // MARK: - Private: realtime tap callback
 
     /// Called by AVAudioEngine on the realtime audio thread for every tap buffer.
+    /// Handles any hardware sample rate by downsampling to 16 kHz for the pipeline.
     private func processTapBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) {
         guard let channelData = buffer.floatChannelData else { return }
         let frameCount = Int(buffer.frameLength)
         guard frameCount > 0 else { return }
 
-        // Convert Float32 → Int16 (PCM normalised to Int16 range).
+        let hardwareSampleRate = buffer.format.sampleRate
+        let targetSampleRate = LiveAudioEngine.sampleRate  // 16000
+
+        // Convert Float32 → Int16, resampling if hardware SR != 16 kHz.
+        // Simple linear interpolation resample — sufficient for voice.
+        let ratio = hardwareSampleRate / targetSampleRate
+        let outputFrameCount = Int(Double(frameCount) / ratio)
+        guard outputFrameCount > 0 else { return }
+
         let float32Ptr = channelData[0]
-        var newSamples = [Int16](unsafeUninitializedCapacity: frameCount) { buf, count in
-            for i in 0..<frameCount {
-                let clamped = max(-1.0, min(1.0, float32Ptr[i]))
-                buf[i] = Int16(clamped * Float(Int16.max))
-            }
-            count = frameCount
+        var resampledInt16 = [Int16](repeating: 0, count: outputFrameCount)
+        for i in 0..<outputFrameCount {
+            let srcIndex = Double(i) * ratio
+            let lo = Int(srcIndex)
+            let hi = min(lo + 1, frameCount - 1)
+            let frac = Float(srcIndex - Double(lo))
+            let sample = float32Ptr[lo] * (1 - frac) + float32Ptr[hi] * frac
+            let clamped = max(-1.0, min(1.0, sample))
+            resampledInt16[i] = Int16(clamped * Float(Int16.max))
         }
 
-        // Merge with any residual from a prior partial frame.
+        // Merge with residual from prior partial frame.
+        var newSamples = resampledInt16
         if !residualSamples.isEmpty {
             newSamples = residualSamples + newSamples
             residualSamples = []
         }
 
-        // Slice into discrete 20 ms frames.
+        // Slice into discrete 20 ms frames at 16 kHz (320 samples).
         let frameSize = LiveAudioEngine.samplesPerFrame
         var offset = 0
-        let captureDate = Date()  // one Date() call per tap minimises allocations
+        let captureDate = Date()
 
         while offset + frameSize <= newSamples.count {
             let slice = Array(newSamples[offset..<(offset + frameSize)])
             let frame = AudioFrame(samples: slice, timestamp: captureDate)
-
-            // Deliver the raw frame event.
             emitEvent(.frame(frame))
-
-            // Run VAD on the realtime thread.
             vad.process(frame: frame)
-
             offset += frameSize
         }
 
-        // Keep any trailing samples for the next callback.
         if offset < newSamples.count {
             residualSamples = Array(newSamples[offset...])
         }

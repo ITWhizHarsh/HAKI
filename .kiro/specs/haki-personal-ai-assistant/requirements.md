@@ -56,19 +56,20 @@ Because the scope is large, requirements are grouped by capability area. Many ca
 8. IF the User issues more than one playback command within the same 200-millisecond window, THEN THE Screen_Reader SHALL apply a stop command before any pause command and a pause command before any resume command.
 9. IF the User requests read-aloud of a named application that is not running or cannot be found, THEN THE Screen_Reader SHALL NOT begin playback and SHALL inform the User that the named application is unavailable.
 
-### Requirement 2: Screen Content Access and Permissions
+### Requirement 2: Permissions and Screen Content Access
 
-**User Story:** As a macOS user, I want HAKI to access screen content only with my granted permission, so that I retain control over my privacy.
+**User Story:** As a macOS user, I want HAKI to access screen content, the microphone, and other applications only with my granted permission, so that I retain control over my privacy.
 
 #### Acceptance Criteria
 
-1. WHEN HAKI first attempts an operation that requires screen capture and the required macOS screen-recording or accessibility permission has not previously been requested, THE HAKI SHALL present the corresponding macOS permission request and direct the User to grant the permission in macOS System Settings.
+1. WHEN HAKI first attempts an operation that requires a macOS permission, including the screen-recording, accessibility, automation, or microphone permission, and that permission has not previously been requested, THE HAKI SHALL present the corresponding macOS permission request and direct the User to grant the permission in macOS System Settings.
 2. IF the User attempts a capability that requires a macOS permission that is not granted, THEN THE HAKI SHALL decline the capability and inform the User, within 2 seconds of the attempt, which permission is missing, which capability is unavailable without that permission, and how to grant the missing permission in macOS System Settings.
-3. WHILE both the screen-recording and accessibility permissions are granted, THE HAKI SHALL present no missing-permission messages to the User.
+3. WHILE every macOS permission required by the User's enabled capabilities is granted, THE HAKI SHALL present no missing-permission messages to the User.
 4. THE HAKI SHALL provide the User a control that enables or disables screen content access, and SHALL keep that control accessible to the User whenever HAKI is running.
 5. WHILE screen content access is disabled by the User, THE Screen_Reader SHALL decline screen-reading requests and inform the User that screen content access is disabled.
 6. IF the User denies a macOS permission that HAKI has requested, THEN THE HAKI SHALL preserve the User's existing settings, identify each capability that remains unavailable without that permission, and direct the User to grant the permission in macOS System Settings.
-7. WHEN a previously granted screen-recording or accessibility permission is revoked while HAKI is running, THE HAKI SHALL, within 5 seconds of detecting the revocation, disable each capability that depends on the revoked permission and inform the User which capabilities have become unavailable and how to restore the permission in macOS System Settings.
+7. WHEN a previously granted macOS permission required by HAKI, including the screen-recording, accessibility, automation, or microphone permission, is revoked while HAKI is running, THE HAKI SHALL, within 5 seconds of detecting the revocation, disable each capability that depends on the revoked permission and inform the User which capabilities have become unavailable and how to restore the permission in macOS System Settings.
+8. IF the microphone permission has not been granted, THEN THE Voice_Engine SHALL NOT capture User speech and THE HAKI SHALL inform the User that the microphone permission is missing, that voice interaction is unavailable without the microphone permission, and how to grant the microphone permission in macOS System Settings.
 
 ### Requirement 3: Zero-Latency Conversational Voice
 
@@ -120,7 +121,7 @@ Because the scope is large, requirements are grouped by capability area. Many ca
 1. THE Persona_Engine SHALL apply a consistent HAKI personality identity to every response presented to the User, regardless of the personality intensity setting.
 2. WHEN HAKI responds to the User and the Mood_Detector has provided a detected mood and the Memory_Brain has provided relevant context, THE Persona_Engine SHALL incorporate that detected mood and that relevant context into the response tone.
 3. THE Persona_Engine SHALL provide the User a control to set personality expression intensity to one of at least three discrete, ordered levels spanning from a defined minimum level to a defined maximum level.
-4. WHILE the User has set personality intensity to its minimum level, THE Persona_Engine SHALL produce concise responses, prioritizing conciseness over personality identity expression when the two conflict.
+4. WHILE the User has set personality intensity to its minimum level, THE Persona_Engine SHALL produce concise responses, prioritizing conciseness over personality identity expression when conciseness and personality identity expression conflict.
 5. IF the detected mood from the Mood_Detector, the relevant context from the Memory_Brain, or both are unavailable when HAKI responds, THEN THE Persona_Engine SHALL produce the response applying the HAKI personality identity at the current intensity level using whichever of the detected mood and relevant context is available, and SHALL present the response without delaying it for the unavailable input.
 
 ### Requirement 7: Persistent Core Memory
@@ -260,7 +261,7 @@ Because the scope is large, requirements are grouped by capability area. Many ca
 
 #### Acceptance Criteria
 
-1. WHEN the User types text in a supported input field, THE Text_Assistant SHALL correct a detected spelling error inline without a separate confirm step, and only when its confidence in the correction is at or above its configured threshold.
+1. WHEN the User types text in a supported input field, THE Text_Assistant SHALL correct a detected spelling error inline without a separate confirm step, and only when the Text_Assistant's confidence in the correction is at or above the Text_Assistant's configured confidence threshold.
 2. WHEN the User types text in a supported input field, THE Text_Assistant SHALL suggest a single context-aware completion drawn from Memory_Brain context and recent User input.
 3. WHILE the User has paused typing for at least 500 milliseconds or focused a supported input field without typing, THE Text_Assistant SHALL offer a context-aware completion for that field.
 4. WHEN the User accepts a suggested completion, THE Text_Assistant SHALL insert the accepted completion at the current cursor position in the input field.
