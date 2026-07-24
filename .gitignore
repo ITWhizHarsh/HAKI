@@ -89,6 +89,9 @@ credentials.json
 *.swo
 *~
 
+# ─── ML Models (large binaries — download at runtime) ────────────────────────
+models/
+
 # ─── Misc ────────────────────────────────────────────────────────────────────
 *.log
 *.tmp
