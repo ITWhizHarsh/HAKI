@@ -89,6 +89,13 @@ let package = Package(
             path: "Sources/Subsystems/Scheduler"
         ),
 
+        // MARK: - HAKIFrontend SwiftUI executable target
+        .executableTarget(
+            name: "HAKIFrontend",
+            dependencies: ["HAKIIPC", "HAKIAudio", "HAKIPermissions"],
+            path: "Sources/HAKIFrontend"
+        ),
+
         // MARK: - Test targets
         .testTarget(
             name: "HAKITests",
@@ -124,6 +131,20 @@ let package = Package(
                 .product(name: "SwiftCheck", package: "SwiftCheck")
             ],
             path: "Tests/HAKIPropertyTests"
+        ),
+
+        // MARK: - macOS native-audio integration tests [hardware/macOS gate]
+        // Validates: Requirements 2.1–2.5, 5.2, 5.6–5.7
+        // Tests require macOS 14+ and are intentionally separate from portable
+        // unit CI. Hardware-dependent microphone/audio-route tests are guarded
+        // with #if canImport(AVFoundation) && os(macOS) within each file.
+        .testTarget(
+            name: "HAKIVoiceTests",
+            dependencies: [
+                "HAKIAudio",
+                "HAKIIPC"
+            ],
+            path: "Tests/Voice"
         )
     ]
 )

@@ -1,0 +1,805 @@
+{
+  "pbtResults": {
+    "7.3 Write the memory admission and recovery property test": {
+      "status": "passed",
+      "lastRunTimestamp": 1785171848424
+    },
+    "6.4 Write the barge-in invalidation property and deterministic latency test": {
+      "status": "passed",
+      "lastRunTimestamp": 1785171902312
+    },
+    "6.5 Write the confirmed-playback context property test": {
+      "status": "passed",
+      "lastRunTimestamp": 1785172047595
+    },
+    "7.4 Write local-route and MLX configuration tests": {
+      "status": "passed",
+      "lastRunTimestamp": 1785172203327
+    },
+    "6.3 Write the smart-turn silence property test": {
+      "status": "passed",
+      "lastRunTimestamp": 1785172571246
+    },
+    "10.2 Write the session-scoped cloud-gate truth-table property test": {
+      "status": "passed",
+      "lastRunTimestamp": 1785172948167
+    },
+    "11.2 Write the privacy-preserving diagnostic completeness property test": {
+      "status": "passed",
+      "lastRunTimestamp": 1785174517472
+    },
+    "3.4 Write the sequenced capture/transcript/Pipecat property test": {
+      "status": "passed",
+      "lastRunTimestamp": 1785175092013
+    }
+  },
+  "executionHistory": {
+    "1.1 Implement deterministic legacy-voice discovery, classification, sanitization, and inventory generation": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205238
+      },
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882228488
+      },
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882949418
+      }
+    ],
+    "1.2 Generate and repository-track the complete static legacy archive": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205363
+      },
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882980961
+      },
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784883254842
+      }
+    ],
+    "1.3 Implement zero-coupling archive enforcement and its CI policy": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205396
+      },
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784883390360
+      },
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784883735181
+      }
+    ],
+    "2.1 Pin direct production dependencies and isolate retired voice dependencies": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205429
+      },
+      {
+        "executionId": "41f9875d-f07e-4860-b569-d837719f51a6",
+        "chatSessionId": "sess_320a0ee3-ce61-45bb-a785-641b2d776425",
+        "timestamp": 1784893975336
+      }
+    ],
+    "2.2 Implement local model/voice-asset availability manifests and non-blocking startup checks": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205470
+      },
+      {
+        "executionId": "301d8309-a99c-4c5b-9199-588df39a0e0e",
+        "chatSessionId": "sess_f1032e07-9733-4c4f-b77d-39c27b5c4511",
+        "timestamp": 1784896276983
+      },
+      {
+        "executionId": "301d8309-a99c-4c5b-9199-588df39a0e0e",
+        "chatSessionId": "sess_f1032e07-9733-4c4f-b77d-39c27b5c4511",
+        "timestamp": 1784896677544
+      }
+    ],
+    "2.3 Create the typed `core.voice` package boundary and prohibit reuse of legacy runtime routers": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205502
+      },
+      {
+        "executionId": "301d8309-a99c-4c5b-9199-588df39a0e0e",
+        "chatSessionId": "sess_f1032e07-9733-4c4f-b77d-39c27b5c4511",
+        "timestamp": 1784896939837
+      },
+      {
+        "executionId": "301d8309-a99c-4c5b-9199-588df39a0e0e",
+        "chatSessionId": "sess_f1032e07-9733-4c4f-b77d-39c27b5c4511",
+        "timestamp": 1784897189186
+      }
+    ],
+    "3.1 Define strict versioned protocol schemas, framing, and peer-security primitives": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205538
+      },
+      {
+        "executionId": "215699b0-2b44-43fa-9d11-d0bf2eea776a",
+        "chatSessionId": "sess_78c3951d-7fb3-4700-9b16-50a239e93dc4",
+        "timestamp": 1784897531423
+      },
+      {
+        "executionId": "215699b0-2b44-43fa-9d11-d0bf2eea776a",
+        "chatSessionId": "sess_78c3951d-7fb3-4700-9b16-50a239e93dc4",
+        "timestamp": 1784897724733
+      }
+    ],
+    "3.2 Implement the same-UID `VoiceUnixServer` with secure lifecycle and terminal turn handling": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205568
+      },
+      {
+        "executionId": "215699b0-2b44-43fa-9d11-d0bf2eea776a",
+        "chatSessionId": "sess_78c3951d-7fb3-4700-9b16-50a239e93dc4",
+        "timestamp": 1784897733445
+      },
+      {
+        "executionId": "215699b0-2b44-43fa-9d11-d0bf2eea776a",
+        "chatSessionId": "sess_78c3951d-7fb3-4700-9b16-50a239e93dc4",
+        "timestamp": 1784898066589
+      }
+    ],
+    "3.3 Implement the Swift UDS client and output/control event handling": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205610
+      },
+      {
+        "executionId": "215699b0-2b44-43fa-9d11-d0bf2eea776a",
+        "chatSessionId": "sess_78c3951d-7fb3-4700-9b16-50a239e93dc4",
+        "timestamp": 1784898079260
+      },
+      {
+        "executionId": "215699b0-2b44-43fa-9d11-d0bf2eea776a",
+        "chatSessionId": "sess_78c3951d-7fb3-4700-9b16-50a239e93dc4",
+        "timestamp": 1784898537697
+      }
+    ],
+    "4.1 Implement `VoiceAudioController` VoiceProcessingIO lifecycle and capture recovery": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205649
+      },
+      {
+        "executionId": "301d8309-a99c-4c5b-9199-588df39a0e0e",
+        "chatSessionId": "sess_f1032e07-9733-4c4f-b77d-39c27b5c4511",
+        "timestamp": 1784896696964
+      },
+      {
+        "executionId": "301d8309-a99c-4c5b-9199-588df39a0e0e",
+        "chatSessionId": "sess_f1032e07-9733-4c4f-b77d-39c27b5c4511",
+        "timestamp": 1784896930114
+      }
+    ],
+    "4.2 Implement the same-UID transient `AudioFrameRing` and native PCM playback renderer": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205692
+      },
+      {
+        "executionId": "ebd4a085-a580-44e9-b3c2-a7dbe9ffd150",
+        "chatSessionId": "sess_85be7ceb-f581-4743-85ea-af411aebca9d",
+        "timestamp": 1784900208417
+      }
+    ],
+    "4.3 Implement the CoreML Qwen3 local ASR adapter and transcript generation contract": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205735
+      },
+      {
+        "executionId": "ebd4a085-a580-44e9-b3c2-a7dbe9ffd150",
+        "chatSessionId": "sess_85be7ceb-f581-4743-85ea-af411aebca9d",
+        "timestamp": 1784900213793
+      }
+    ],
+    "5.1 Implement voice session state, typed frame metadata, and turn registry": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205755
+      },
+      {
+        "executionId": "763cfdf3-35c3-4430-9d59-228a20cb0b6b",
+        "chatSessionId": "sess_adb9b7a2-7918-4905-89ab-469377c73227",
+        "timestamp": 1784901773660
+      },
+      {
+        "executionId": "763cfdf3-35c3-4430-9d59-228a20cb0b6b",
+        "chatSessionId": "sess_adb9b7a2-7918-4905-89ab-469377c73227",
+        "timestamp": 1784902742525
+      }
+    ],
+    "5.2 Implement ASR/ring ingress adapters for mandatory Pipecat input/transcription frames": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205779
+      },
+      {
+        "executionId": "763cfdf3-35c3-4430-9d59-228a20cb0b6b",
+        "chatSessionId": "sess_adb9b7a2-7918-4905-89ab-469377c73227",
+        "timestamp": 1784902754315
+      },
+      {
+        "executionId": "763cfdf3-35c3-4430-9d59-228a20cb0b6b",
+        "chatSessionId": "sess_adb9b7a2-7918-4905-89ab-469377c73227",
+        "timestamp": 1784903024946
+      }
+    ],
+    "5.3 Implement `VoiceSessionPipeline` initialization, frame graph, and backpressure policy": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205802
+      },
+      {
+        "executionId": "763cfdf3-35c3-4430-9d59-228a20cb0b6b",
+        "chatSessionId": "sess_adb9b7a2-7918-4905-89ab-469377c73227",
+        "timestamp": 1784903041632
+      },
+      {
+        "executionId": "763cfdf3-35c3-4430-9d59-228a20cb0b6b",
+        "chatSessionId": "sess_adb9b7a2-7918-4905-89ab-469377c73227",
+        "timestamp": 1784903360215
+      }
+    ],
+    "6.1 Implement Silero VAD smart-turn state and turn joining": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205835
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909934760
+      },
+      {
+        "executionId": "b7144c86-e044-42f1-bc79-21fa4669a824",
+        "chatSessionId": "sess_677e2105-d6eb-4997-a94a-a88caf63d5af",
+        "timestamp": 1784911567581
+      },
+      {
+        "executionId": "b7144c86-e044-42f1-bc79-21fa4669a824",
+        "chatSessionId": "sess_677e2105-d6eb-4997-a94a-a88caf63d5af",
+        "timestamp": 1784911902644
+      }
+    ],
+    "6.2 Implement `BargeInCoordinator` cancellation generations and `PlaybackLedger`": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205864
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909934790
+      },
+      {
+        "executionId": "0f2b4b65-ed6a-4eab-b278-b5be468cdb92",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785165466364
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171531216
+      }
+    ],
+    "7.1 Implement `VoiceResourceManager` warm-up, measurement, draining, and recovery admission": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205916
+      },
+      {
+        "executionId": "6d0b3f95-3c04-4b71-ae76-958c17b42ded",
+        "chatSessionId": "sess_18219ba4-663f-4d9b-8718-7021f75a10c0",
+        "timestamp": 1784909432763
+      },
+      {
+        "executionId": "0dd9d5ef-20b1-41f3-b306-c682843284bc",
+        "chatSessionId": "sess_fc50d803-2bbc-4c73-9bfe-0b6ba82136e6",
+        "timestamp": 1784909625059
+      },
+      {
+        "executionId": "0dd9d5ef-20b1-41f3-b306-c682843284bc",
+        "chatSessionId": "sess_fc50d803-2bbc-4c73-9bfe-0b6ba82136e6",
+        "timestamp": 1784909859573
+      }
+    ],
+    "7.2 Implement the fixed local `VoiceLLMRouter` and MLX streaming service": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205964
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909934838
+      },
+      {
+        "executionId": "0f2b4b65-ed6a-4eab-b278-b5be468cdb92",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785165466749
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171538516
+      }
+    ],
+    "8.1 Implement registered Pydantic tool validation and turn-correlated capability execution": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882205993
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909934863
+      },
+      {
+        "executionId": "7d155f9a-5b3f-4846-8c68-1140f0016768",
+        "chatSessionId": "sess_1f5f2716-37d4-4b10-82b4-441e28c3ff05",
+        "timestamp": 1785177514491
+      },
+      {
+        "executionId": "7d155f9a-5b3f-4846-8c68-1140f0016768",
+        "chatSessionId": "sess_1f5f2716-37d4-4b10-82b4-441e28c3ff05",
+        "timestamp": 1785177835750
+      }
+    ],
+    "9.1 Implement sentence boundaries and the local XTTS v2 adapter": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882206031
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909934890
+      },
+      {
+        "executionId": "18b3b0f7-5a6c-4b52-9c38-b102f8775961",
+        "chatSessionId": "sess_c80537e6-32af-40ae-b5ea-f4ebfb63b8ee",
+        "timestamp": 1785178772073
+      },
+      {
+        "executionId": "18b3b0f7-5a6c-4b52-9c38-b102f8775961",
+        "chatSessionId": "sess_c80537e6-32af-40ae-b5ea-f4ebfb63b8ee",
+        "timestamp": 1785179207270
+      }
+    ],
+    "9.2 Implement the Python PCM sink, TTFA measurement, and synthesis failure text fallback": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882206061
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909934912
+      },
+      {
+        "executionId": "18b3b0f7-5a6c-4b52-9c38-b102f8775961",
+        "chatSessionId": "sess_c80537e6-32af-40ae-b5ea-f4ebfb63b8ee",
+        "timestamp": 1785179213142
+      },
+      {
+        "executionId": "18b3b0f7-5a6c-4b52-9c38-b102f8775961",
+        "chatSessionId": "sess_c80537e6-32af-40ae-b5ea-f4ebfb63b8ee",
+        "timestamp": 1785179218466
+      }
+    ],
+    "10.1 Implement `CloudEscalationGate` session state, conditions, and decision diagnostics": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882206085
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909934974
+      },
+      {
+        "executionId": "b7144c86-e044-42f1-bc79-21fa4669a824",
+        "chatSessionId": "sess_677e2105-d6eb-4997-a94a-a88caf63d5af",
+        "timestamp": 1784911574895
+      },
+      {
+        "executionId": "b7144c86-e044-42f1-bc79-21fa4669a824",
+        "chatSessionId": "sess_677e2105-d6eb-4997-a94a-a88caf63d5af",
+        "timestamp": 1784911908431
+      }
+    ],
+    "11.1 Implement versioned diagnostics schema, redaction, and atomic local store": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882206113
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909935002
+      },
+      {
+        "executionId": "0f2b4b65-ed6a-4eab-b278-b5be468cdb92",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785165468521
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171544962
+      }
+    ],
+    "12.1 Wire Swift audio, secure transport, and Python `VoiceSessionPipeline` into an isolated replacement-only session path": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882206138
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909935032
+      }
+    ],
+    "13. Checkpoint — verify isolation and replacement safety before live cutover": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882206183
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909935067
+      }
+    ],
+    "14.1 Replace live voice service wiring with `VoiceUnixServer` and `VoiceSessionPipeline`": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882206206
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909935112
+      }
+    ],
+    "14.2 Remove live legacy buffering, providers, subprocess playback, and route selections": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882206234
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909935174
+      }
+    ],
+    "15.1 Implement the voice CI matrix and deterministic validation runners": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882206259
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909935208
+      }
+    ],
+    "16. Final checkpoint — verify release readiness": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784882206283
+      },
+      {
+        "executionId": "8cd0b0fd-68e7-457c-a9de-bc0fa27cf9f7",
+        "chatSessionId": "sess_2ebe5088-7639-4f71-94ed-7bc3b7e56ce1",
+        "timestamp": 1784909935230
+      }
+    ],
+    "1. Freeze, archive, and statically isolate the legacy voice pipeline": [
+      {
+        "executionId": "e0af0f6e-4b74-409a-8fd9-b5f1b2733e0a",
+        "chatSessionId": "sess_1a8542fc-d594-499f-8989-7d3a0dd933a4",
+        "timestamp": 1784883735240
+      }
+    ],
+    "2. Establish pinned local-only dependencies, model manifests, and voice package foundations": [
+      {
+        "executionId": "301d8309-a99c-4c5b-9199-588df39a0e0e",
+        "chatSessionId": "sess_f1032e07-9733-4c4f-b77d-39c27b5c4511",
+        "timestamp": 1784897189257
+      }
+    ],
+    "3. Implement the secure, versioned Swift/Python text-and-control UDS protocol": [
+      {
+        "executionId": "215699b0-2b44-43fa-9d11-d0bf2eea776a",
+        "chatSessionId": "sess_78c3951d-7fb3-4700-9b16-50a239e93dc4",
+        "timestamp": 1784898537751
+      }
+    ],
+    "4. Build the Swift full-duplex native audio, local ASR, ephemeral ring, and renderer": [
+      {
+        "executionId": "ebd4a085-a580-44e9-b3c2-a7dbe9ffd150",
+        "chatSessionId": "sess_85be7ceb-f581-4743-85ea-af411aebca9d",
+        "timestamp": 1784898890827
+      },
+      {
+        "executionId": "ebd4a085-a580-44e9-b3c2-a7dbe9ffd150",
+        "chatSessionId": "sess_85be7ceb-f581-4743-85ea-af411aebca9d",
+        "timestamp": 1784900213837
+      }
+    ],
+    "5. Implement the session-owned Pipecat graph and bounded frame transport": [
+      {
+        "executionId": "763cfdf3-35c3-4430-9d59-228a20cb0b6b",
+        "chatSessionId": "sess_adb9b7a2-7918-4905-89ab-469377c73227",
+        "timestamp": 1784903360305
+      }
+    ],
+    "6. Implement smart-turn VAD, immediate barge-in, cancellation, and playback-confirmed context": [
+      {
+        "executionId": "815bc143-94ac-49e3-ba1c-afaea1b2f8c8",
+        "chatSessionId": "sess_c261db50-ff50-4151-8064-9a22ed0b70d6",
+        "timestamp": 1784903768012
+      },
+      {
+        "executionId": "815bc143-94ac-49e3-ba1c-afaea1b2f8c8",
+        "chatSessionId": "sess_c261db50-ff50-4151-8064-9a22ed0b70d6",
+        "timestamp": 1784904371652
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171531320
+      }
+    ],
+    "7. Add local MLX Qwen routing and memory admission controls": [
+      {
+        "executionId": "6d0b3f95-3c04-4b71-ae76-958c17b42ded",
+        "chatSessionId": "sess_18219ba4-663f-4d9b-8718-7021f75a10c0",
+        "timestamp": 1784909427050
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171538568
+      }
+    ],
+    "10. Implement the explicit session-scoped Gemini Live eligibility gate": [
+      {
+        "executionId": "b7144c86-e044-42f1-bc79-21fa4669a824",
+        "chatSessionId": "sess_677e2105-d6eb-4997-a94a-a88caf63d5af",
+        "timestamp": 1784911908456
+      }
+    ],
+    "11. Add privacy-preserving local voice diagnostics and failure reporting": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171545022
+      }
+    ],
+    "6.3 Write the smart-turn silence property test": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171577432
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174562200
+      }
+    ],
+    "6.4 Write the barge-in invalidation property and deterministic latency test": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171578228
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174562476
+      }
+    ],
+    "6.5 Write the confirmed-playback context property test": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171578931
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174562636
+      }
+    ],
+    "7.3 Write the memory admission and recovery property test": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171579763
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174549454
+      }
+    ],
+    "7.4 Write local-route and MLX configuration tests": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171580618
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174555788
+      }
+    ],
+    "10.2 Write the session-scoped cloud-gate truth-table property test": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171581400
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174562708
+      }
+    ],
+    "10.3 Add eligible-cloud failure integration coverage": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171582220
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174562920
+      }
+    ],
+    "11.2 Write the privacy-preserving diagnostic completeness property test": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171582939
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174562537
+      }
+    ],
+    "11.3 Add local diagnostic-store integration tests": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785171583710
+      },
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174562672
+      }
+    ],
+    "1.4 Write property tests for archive inventory and redaction preservation": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174600823
+      }
+    ],
+    "3.4 Write the sequenced capture/transcript/Pipecat property test": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174601961
+      }
+    ],
+    "5.4 Write Pipecat pipeline integration tests": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174602858
+      }
+    ],
+    "4.4 Add macOS native-audio integration tests **[hardware/macOS gate]**": [
+      {
+        "executionId": "e5469296-348e-41d7-9d82-f0ca1b7bd1b8",
+        "chatSessionId": "sess_825be870-7fc2-4f4e-82d8-1daa7c10fbd5",
+        "timestamp": 1785174604060
+      }
+    ],
+    "8. Implement strict voice tool schemas and capability adapters": [
+      {
+        "executionId": "7d155f9a-5b3f-4846-8c68-1140f0016768",
+        "chatSessionId": "sess_1f5f2716-37d4-4b10-82b4-441e28c3ff05",
+        "timestamp": 1785177835823
+      }
+    ],
+    "9. Implement sentence-streaming XTTS and reliable native playback delivery": [
+      {
+        "executionId": "18b3b0f7-5a6c-4b52-9c38-b102f8775961",
+        "chatSessionId": "sess_c80537e6-32af-40ae-b5ea-f4ebfb63b8ee",
+        "timestamp": 1785179218567
+      }
+    ],
+    "12. Integrate the replacement runtime behind a non-production internal development gate": [
+      {
+        "executionId": "78f3b8a8-67bc-41a1-b110-d7ddab2b8976",
+        "chatSessionId": "sess_29893726-3b01-4b52-ab99-b75df8877ee6",
+        "timestamp": 1785179912850
+      },
+      {
+        "executionId": "78f3b8a8-67bc-41a1-b110-d7ddab2b8976",
+        "chatSessionId": "sess_29893726-3b01-4b52-ab99-b75df8877ee6",
+        "timestamp": 1785181410642
+      }
+    ],
+    "14. Cut over live voice wiring and remove all executable legacy voice routes": [
+      {
+        "executionId": "0c570aeb-4217-491c-9623-7eb258f1c948",
+        "chatSessionId": "sess_121ad787-a9e1-4e48-a75b-d2d91415814d",
+        "timestamp": 1785211999236
+      },
+      {
+        "executionId": "0c570aeb-4217-491c-9623-7eb258f1c948",
+        "chatSessionId": "sess_121ad787-a9e1-4e48-a75b-d2d91415814d",
+        "timestamp": 1785212575889
+      }
+    ]
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "exclude_path_globs": [
+    "tools/**",
+    "Core/tests/**",
+    ".kiro/**",
+    "HAKI/Tests/**"
+  ],
+  "category_precedence": [
+    "configuration",
+    "dependency_declaration",
+    "startup_path",
+    "handler",
+    "routing_rule",
+    "script"
+  ],
+  "rules": {
+    "configuration": {
+      "path_globs": [
+        "Core/.env.example"
+      ],
+      "content_patterns": []
+    },
+    "dependency_declaration": {
+      "path_globs": [
+        "Core/requirements.txt",
+        "Core/pyproject.toml",
+        "HAKI/Package.swift",
+        "HAKI/Package.resolved"
+      ],
+      "content_patterns": []
+    },
+    "startup_path": {
+      "path_globs": [
+        "start_haki.sh",
+        "Core/haki_core_service.py",
+        "HAKI/Sources/HAKI/AppDelegate.swift",
+        "HAKI/Sources/HAKI/CoreProcessManager.swift",
+        "HAKI/Sources/HAKI/main.swift"
+      ],
+      "content_patterns": [
+        "HAKI_(?:GROQ|DEEPGRAM|CARTESIA)_API_KEY",
+        "JSONIPCServer",
+        "CoreProcessManager"
+      ]
+    },
+    "handler": {
+      "path_globs": [
+        "Core/core/ipc/server.py",
+        "Core/core/model_provider/stt_engine.py",
+        "Core/core/model_provider/tts_engine.py",
+        "HAKI/Sources/Subsystems/Audio/*.swift",
+        "HAKI/Sources/Subsystems/IPC/*.swift"
+      ],
+      "content_patterns": [
+        "AUDIO_FRAME",
+        "Deepgram",
+        "Edge[- ]?TTS",
+        "Cartesia",
+        "Kokoro",
+        "ChatTTS",
+        "afplay",
+        "\\bsay\\b",
+        "STTService",
+        "TTSService",
+        "VoiceEngine"
+      ]
+    },
+    "routing_rule": {
+      "path_globs": [
+        "Core/core/model_provider/llm_router.py",
+        "Core/core/orchestrator/orchestrator.py",
+        "Core/core/orchestrator/intent_router.py"
+      ],
+      "content_patterns": [
+        "_routing_order",
+        "Groq.*(?:Cerebras|Gemini)",
+        "Legacy|fallback",
+        "stream_turn"
+      ],
+      "require_content_match": true
+    },
+    "script": {
+      "path_globs": [
+        "**/*.sh",
+        "**/*.py",
+        "**/*.swift"
+      ],
+      "content_patterns": [
+        "Deepgram",
+        "Groq",
+        "Cartesia",
+        "Edge[-_ ]?TTS",
+        "Kokoro",
+        "ChatTTS",
+        "afplay",
+        "\\bsay\\b"
+      ],
+      "require_content_match": true
+    }
+  }
+}

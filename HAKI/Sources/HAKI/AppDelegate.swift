@@ -55,6 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         permissionManager = PermissionManager()
 
         setupMenuBarItem()
+        reportLocalVoiceAvailabilityAtStartup()
         // Open the conversation window immediately so the user can see
         // what HAKI is hearing and saying.
         ConversationWindowController.shared.open()
@@ -70,6 +71,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Private helpers
+
+    /// Inspect provisioned local voice assets on a utility queue. This only
+    /// reports actionable availability status; it never downloads/converts a
+    /// model or chooses a cloud/legacy fallback while the app is starting.
+    private func reportLocalVoiceAvailabilityAtStartup() {
+        DispatchQueue.global(qos: .utility).async {
+            let availability = VoiceLocalAssetConfiguration().availability()
+            if availability.isReady {
+                print("[AppDelegate] ✓ Local voice assets are available.")
+            } else {
+                print("[AppDelegate] Local voice unavailable: \(availability.actionableSummary)")
+            }
+        }
+    }
 
     private func setupIPC() {
         // Create the IPC client pointing at the same socket the Core will use.

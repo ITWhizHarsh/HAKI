@@ -168,9 +168,10 @@ class Orchestrator:
         Live Persona_Engine instance.  A default instance is created when None.
     dialogue_manager : DialogueManager | None
         Live Dialogue_Manager instance for ambiguity detection.
-    llm_provider : object | None
-        Model Provider for the LLM capability (intent classification).  A
-        StubModelProvider is used when None is supplied.
+    llm_router : object | None
+        LLMRouter for non-voice chat/recall turns.
+    haki_brain : object | None
+        HAKIBrain for knowledge retrieval and conversation persistence.
     """
 
     def __init__(
@@ -182,10 +183,8 @@ class Orchestrator:
         dialogue_manager: DialogueManager | None = None,
         llm_provider: Any | None = None,
         intent_router: "IntentRouter | None" = None,
-        # New engines (wired in by haki_core_service.py)
+        # Non-voice engines (wired in by haki_core_service.py)
         llm_router: Any | None = None,       # core.model_provider.LLMRouter
-        stt_engine: Any | None = None,       # core.model_provider.STTEngine
-        tts_engine: Any | None = None,       # core.model_provider.TTSEngine
         haki_brain: Any | None = None,       # core.memory.HAKIBrain
     ) -> None:
         self._mood_detector: MoodDetector = mood_detector or MoodDetector()
@@ -194,11 +193,10 @@ class Orchestrator:
         self._persona_engine: PersonaEngine = persona_engine or PersonaEngine()
         self._dialogue_manager: DialogueManager = dialogue_manager or DialogueManager()
 
-        # New AI engines — stored as optional attributes; subsystems that need them
-        # call self._llm_router, self._stt_engine, etc.
+        # Non-voice AI engines — stored as optional attributes.
+        # Voice turns are handled exclusively by the VoiceSessionPipeline;
+        # stt_engine and tts_engine are removed from Orchestrator scope.
         self._llm_router: Any = llm_router
-        self._stt_engine: Any = stt_engine
-        self._tts_engine: Any = tts_engine
         self._haki_brain: Any = haki_brain
 
         if llm_provider is None:
@@ -281,15 +279,11 @@ class Orchestrator:
             extras=extras or {},
         )
         
-        # Inject AI engines into extras so capability handlers can access them
+        # Inject non-voice AI engines into extras so capability handlers can access them
         if self._llm_router is not None:
             ctx.extras["llm_router"] = self._llm_router
         if self._haki_brain is not None:
             ctx.extras["haki_brain"] = self._haki_brain
-        if self._stt_engine is not None:
-            ctx.extras["stt_engine"] = self._stt_engine
-        if self._tts_engine is not None:
-            ctx.extras["tts_engine"] = self._tts_engine
 
         # Inject the EXISTING conversation history (prior turns only — NOT the
         # current message) so the chat handler can pass it to the LLM for

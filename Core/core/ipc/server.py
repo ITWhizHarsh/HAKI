@@ -11,6 +11,11 @@ Generated stubs live at:         core/ipc/proto/
 Also provides JSONIPCServer: a simpler JSON-over-UNIX-socket transport
 using asyncio.start_unix_server for Phase 0 integration without grpc-swift.
 
+Live voice is handled exclusively by VoiceUnixServer + VoiceSessionPipeline
+on a separate session-scoped socket (see voice_unix_server.py and
+haki_core_service.py).  AUDIO_FRAME, legacy STT/TTS traffic, Edge TTS,
+afplay, and say subprocess paths have been removed from this server.
+
 Design: Process & Threading Model, Architecture (IPC).
 Requirements: 3.1 — streaming transport for first-audio ≤ 300 ms.
 """
@@ -212,6 +217,49 @@ MSG_TYPE_PROPOSAL = "PROPOSAL"
 MSG_TYPE_REMINDER = "REMINDER"
 MSG_TYPE_AUTOMATION_PROGRESS = "AUTOMATION_PROGRESS"
 MSG_TYPE_TASK_ADDED = "TASK_ADDED"
+# GUI Agent event message type (Req 7.1)
+MSG_TYPE_AGENT_EVENT = "AGENT_EVENT"
+
+
+class AgentEventType:
+    """String constants for AGENT_EVENT sub-types (Req 7.2).
+
+    All seven sub-types are defined here so every component that emits or
+    validates AGENT_EVENT messages imports from a single location.
+    """
+
+    AGENT_START             = "agent_start"
+    AGENT_STEP              = "agent_step"
+    AGENT_DONE              = "agent_done"
+    AGENT_ERROR             = "agent_error"
+    AGENT_MAX_STEPS_REACHED = "agent_max_steps_reached"
+    AGENT_HITL_PAUSE        = "agent_hitl_pause"
+    AGENT_HITL_RESUME       = "agent_hitl_resume"
+
+    _VALID: frozenset[str] = frozenset({
+        AGENT_START,
+        AGENT_STEP,
+        AGENT_DONE,
+        AGENT_ERROR,
+        AGENT_MAX_STEPS_REACHED,
+        AGENT_HITL_PAUSE,
+        AGENT_HITL_RESUME,
+    })
+
+    @classmethod
+    def is_valid(cls, event_type: str) -> bool:
+        """Return True iff *event_type* is one of the seven defined constants."""
+        return event_type in cls._VALID
+
+# ---------------------------------------------------------------------------
+# Voice path note
+# ---------------------------------------------------------------------------
+# Live voice is handled exclusively by VoiceUnixServer / VoiceSessionPipeline
+# on a dedicated session-scoped UNIX socket (see core/ipc/voice_unix_server.py
+# and haki_core_service.py).  The non-voice JSON socket handled here never
+# carries raw microphone audio, legacy STT/TTS traffic, or voice playback
+# subprocesses.  AUDIO_FRAME and legacy voice control messages arriving on
+# this socket are dropped as unsupported.
 
 
 class JSONIPCServer:
@@ -257,6 +305,9 @@ class JSONIPCServer:
         self._scheduler = scheduler
         self._task_tracker = task_tracker
         self._server: asyncio.AbstractServer | None = None
+        # Track all connected stream writers so AGENT_EVENTs can be fanned out
+        # to every connected client (Req 7.3).
+        self._connected_writers: set[asyncio.StreamWriter] = set()
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -307,29 +358,11 @@ class JSONIPCServer:
         peer = writer.get_extra_info("peername") or "unix"
         logger.debug("JSONIPCServer: client connected from %s", peer)
 
-        # Per-connection audio frame buffer: accumulate between speech segments
-        audio_buffer: list[bytes] = []
-        audio_sample_rate: int = 16_000
+        # Register writer for AGENT_EVENT broadcast (Req 7.3)
+        self._connected_writers.add(writer)
+
         # Current active turn task (for barge-in cancellation)
         active_turn_task: asyncio.Task | None = None
-        # Barge-in / overlap control:
-        #   speaking_state["proc"]   — the live `afplay` subprocess, so it can be
-        #                              killed instantly on barge-in / cancel.
-        #   speaking_state["active"] — True from the moment a turn is spawned
-        #                              until it fully finishes, so a second
-        #                              END_OF_SPEECH cannot start a turn that
-        #                              would play OVER the first (the root cause
-        #                              of the "two voices at once" overlap).
-        speaking_state: dict[str, Any] = {"proc": None, "active": False}
-
-        def _kill_playback() -> None:
-            proc = speaking_state.get("proc")
-            if proc is not None and proc.returncode is None:
-                try:
-                    proc.terminate()
-                except ProcessLookupError:
-                    pass
-            speaking_state["proc"] = None
 
         try:
             while True:
@@ -352,254 +385,40 @@ class JSONIPCServer:
                 msg_type = msg.get("type", "")
                 payload = msg.get("payload", {})
 
-                # ── Audio frame accumulation ────────────────────────────
+                # ── AUDIO_FRAME: live voice is handled by VoiceUnixServer ─
                 if msg_type == MSG_TYPE_AUDIO_FRAME:
-                    raw = payload.get("samples_b64") or payload.get("samples")
-                    if raw:
-                        import base64
-                        if isinstance(raw, str):
-                            audio_buffer.append(base64.b64decode(raw))
-                        elif isinstance(raw, list):
-                            import struct
-                            audio_buffer.append(struct.pack(f"<{len(raw)}h", *raw))
-                    audio_sample_rate = payload.get("sample_rate", 16_000)
+                    # Raw audio on this socket is unsupported; live voice uses
+                    # the dedicated VoiceUnixServer session socket.
+                    logger.debug(
+                        "JSONIPCServer: received AUDIO_FRAME on non-voice socket — dropped"
+                    )
                     continue
 
-                # ── End of speech: run STT then LLM ────────────────────
+                # ── PARTIAL_TRANSCRIPT on this socket is legacy-only ──────
+                if msg_type == MSG_TYPE_PARTIAL_TRANSCRIPT:
+                    logger.debug(
+                        "JSONIPCServer: received PARTIAL_TRANSCRIPT on non-voice socket — dropped"
+                    )
+                    continue
+
+                # ── Control events ────────────────────────────────────────
                 if msg_type == MSG_TYPE_CONTROL_EVENT:
                     event_type = payload.get("event_type", "")
                     logger.debug("JSONIPCServer: received CONTROL_EVENT type=%s", event_type)
 
                     if event_type == "END_OF_SPEECH":
-                        frames_bytes = b"".join(audio_buffer)
-                        audio_buffer.clear()
-
-                        if not frames_bytes:
-                            logger.debug("JSONIPCServer: END_OF_SPEECH with no audio — skipping")
-                            continue
-
-                        # Overlap guard: if a turn is already running or HAKI is
-                        # still speaking, do NOT start a competing turn — that is
-                        # exactly what produced two voices playing at once. A real
-                        # interruption arrives as a CANCEL / BARGE_IN event, which
-                        # is handled separately below.
-                        if speaking_state["active"]:
-                            logger.info(
-                                "JSONIPCServer: a turn is already active — ignoring overlapping END_OF_SPEECH"
-                            )
-                            continue
-
-                        # Run STT + LLM + TTS in a background task so we don't block the read loop
-                        async def _stt_then_llm_then_tts(
-                            audio: bytes,
-                            sample_rate: int,
-                            w: asyncio.StreamWriter,
-                        ) -> None:
-                            # ── STT ────────────────────────────────────
-                            transcript = ""
-                            try:
-                                if self._orchestrator and hasattr(self._orchestrator, "_stt_engine"):
-                                    result = await self._orchestrator._stt_engine.transcribe(
-                                        audio, sample_rate
-                                    )
-                                    transcript = result.text.strip()
-                                else:
-                                    logger.warning("JSONIPCServer: no STT engine available")
-                            except Exception as exc:
-                                logger.exception("JSONIPCServer: STT error: %s", exc)
-
-                            logger.info("JSONIPCServer: transcript=%r", transcript)
-
-                            # Send partial transcript result back to Swift STTService
-                            await self._write_message(w, {
-                                "type": MSG_TYPE_PARTIAL_TRANSCRIPT,
-                                "payload": {
-                                    "text": transcript,
-                                    "is_final": True,
-                                    "confidence": 1.0,
-                                },
-                            })
-
-                            if not transcript:
-                                return
-
-                            # ── LLM turn ───────────────────────────────
-                            if self._orchestrator is None:
-                                return
-
-                            turn_id = f"turn_{id(audio)}"
-                            async def _ipc_writer(msg_dict: dict) -> None:
-                                await self._write_message(w, msg_dict)
-
-                            turn_extras: dict = {"ipc_writer": _ipc_writer}
-                            if self._scheduler is not None:
-                                turn_extras["scheduler"] = self._scheduler
-                            if self._task_tracker is not None:
-                                turn_extras["task_tracker"] = self._task_tracker
-
-                            try:
-                                # Collect LLM response text
-                                response_text = []
-                                async for token in self._orchestrator.stream_turn(
-                                    transcript, {}, extras=turn_extras
-                                ):
-                                    response_text.append(token)
-                                    # Send token for display purposes (optional)
-                                    await self._write_message(w, {
-                                        "type": MSG_TYPE_LLM_TOKEN,
-                                        "payload": {
-                                            "turn_id": turn_id,
-                                            "text": token,
-                                            "is_last": False,
-                                        },
-                                    })
-
-                                # ── TTS: speak directly via Microsoft Edge-TTS + afplay ──
-                                # The Core runs locally on the user's Mac, so we
-                                # speak out loud directly. We synthesise speech with
-                                # edge-tts (hi-IN-MadhurNeural) into a temp .mp3 file
-                                # then play it with `afplay -v` at a boosted volume
-                                # so HAKI is clearly audible even while the mic's
-                                # voice-processing unit ducks other audio.
-                                full_text = " ".join(response_text)
-                                logger.info("JSONIPCServer: speaking response: %r", full_text[:100])
-                                # afplay -v is a volume multiplier; the old 4.0
-                                # was so loud it defeated the mic's echo
-                                # cancellation and made HAKI hear itself. Default
-                                # to a saner 2.0, overridable via HAKI_TTS_VOLUME.
-                                _tts_vol = os.environ.get("HAKI_TTS_VOLUME", "2.0")
-                                # Tell the Swift shell we are speaking so it can
-                                # arm barge-in detection and stop treating HAKI's
-                                # own voice as a new user turn.
-                                await self._write_message(w, {
-                                    "type": MSG_TYPE_CONTROL_EVENT,
-                                    "payload": {"event_type": "SPEAKING_STARTED", "turn_id": turn_id},
-                                })
-                                try:
-                                    import tempfile as _tf
-                                    import edge_tts
-                                    from core.model_provider.tts_engine import (
-                                        get_edge_voice_settings,
-                                    )
-
-                                    _voice, _rate, _pitch = get_edge_voice_settings()
-                                    _mp3 = _tf.NamedTemporaryFile(suffix=".mp3", delete=False).name
-                                    communicate = edge_tts.Communicate(
-                                        text=full_text,
-                                        voice=_voice,
-                                        rate=_rate,
-                                        pitch=_pitch,
-                                    )
-                                    await communicate.save(_mp3)
-                                    # afplay -v is a volume multiplier; >1.0 amplifies
-                                    # to overcome voice-processing ducking. afplay
-                                    # plays mp3 natively.
-                                    play_proc = await asyncio.create_subprocess_exec(
-                                        "afplay", "-v", _tts_vol, _mp3,
-                                        stdout=asyncio.subprocess.DEVNULL,
-                                        stderr=asyncio.subprocess.DEVNULL,
-                                    )
-                                    speaking_state["proc"] = play_proc
-                                    try:
-                                        await play_proc.wait()
-                                    except asyncio.CancelledError:
-                                        # Barge-in / cancel: stop the audio NOW.
-                                        if play_proc.returncode is None:
-                                            try:
-                                                play_proc.terminate()
-                                            except ProcessLookupError:
-                                                pass
-                                        raise
-                                    finally:
-                                        speaking_state["proc"] = None
-                                    try:
-                                        os.unlink(_mp3)
-                                    except OSError:
-                                        pass
-                                    logger.info("JSONIPCServer: finished speaking")
-                                except Exception as tts_exc:
-                                    logger.exception("JSONIPCServer: edge-tts TTS failed: %s — falling back to `say`", tts_exc)
-                                    # Fall back to macOS `say` + afplay so audio
-                                    # never fully breaks if edge-tts is unavailable.
-                                    try:
-                                        import tempfile as _tf
-                                        _aiff = _tf.NamedTemporaryFile(suffix=".aiff", delete=False).name
-                                        say_proc = await asyncio.create_subprocess_exec(
-                                            "say", "-r", "188", "-o", _aiff, full_text,
-                                            stdout=asyncio.subprocess.DEVNULL,
-                                            stderr=asyncio.subprocess.DEVNULL,
-                                        )
-                                        await say_proc.wait()
-                                        play_proc = await asyncio.create_subprocess_exec(
-                                            "afplay", "-v", _tts_vol, _aiff,
-                                            stdout=asyncio.subprocess.DEVNULL,
-                                            stderr=asyncio.subprocess.DEVNULL,
-                                        )
-                                        speaking_state["proc"] = play_proc
-                                        try:
-                                            await play_proc.wait()
-                                        except asyncio.CancelledError:
-                                            if play_proc.returncode is None:
-                                                try:
-                                                    play_proc.terminate()
-                                                except ProcessLookupError:
-                                                    pass
-                                            raise
-                                        finally:
-                                            speaking_state["proc"] = None
-                                        try:
-                                            os.unlink(_aiff)
-                                        except OSError:
-                                            pass
-                                        logger.info("JSONIPCServer: finished speaking (say fallback)")
-                                    except Exception as say_exc:
-                                        logger.exception("JSONIPCServer: `say` fallback TTS failed: %s", say_exc)
-
-                                # Tell the Swift shell we have stopped speaking.
-                                await self._write_message(w, {
-                                    "type": MSG_TYPE_CONTROL_EVENT,
-                                    "payload": {"event_type": "SPEAKING_STOPPED", "turn_id": turn_id},
-                                })
-
-                                await self._write_message(w, {
-                                    "type": MSG_TYPE_CONTROL_EVENT,
-                                    "payload": {
-                                        "event_type": "TURN_COMPLETE",
-                                        "turn_id": turn_id,
-                                    },
-                                })
-                            except asyncio.CancelledError:
-                                logger.debug("JSONIPCServer: turn cancelled")
-                            except Exception as exc:
-                                logger.exception("JSONIPCServer: LLM error: %s", exc)
-                                await self._write_message(w, {
-                                    "type": MSG_TYPE_ERROR,
-                                    "payload": {"message": str(exc)},
-                                })
-
-                        speaking_state["active"] = True
-                        active_turn_task = asyncio.ensure_future(
-                            _stt_then_llm_then_tts(frames_bytes, audio_sample_rate, writer)
+                        # END_OF_SPEECH on the non-voice socket is legacy;
+                        # live voice turns are driven by VoiceSessionPipeline VAD.
+                        logger.debug(
+                            "JSONIPCServer: END_OF_SPEECH on non-voice socket — dropped"
                         )
-                        # Clear the active flag the moment the turn finishes
-                        # (success, error, or cancellation) so the next utterance
-                        # can be processed.
-                        active_turn_task.add_done_callback(
-                            lambda _t: speaking_state.__setitem__("active", False)
-                        )
-                        if self._orchestrator is not None:
-                            self._orchestrator.set_current_task(active_turn_task)
                         continue
 
                     elif event_type in ("CANCEL", "BARGE_IN"):
                         if self._orchestrator is not None:
                             self._orchestrator.cancel()
-                        # Kill any audio that is currently playing so HAKI goes
-                        # quiet immediately and listens (true barge-in).
-                        _kill_playback()
                         if active_turn_task and not active_turn_task.done():
                             active_turn_task.cancel()
-                        speaking_state["active"] = False
                         await self._write_message(writer, {
                             "type": MSG_TYPE_CONTROL_EVENT,
                             "payload": {"event_type": event_type, "status": "acknowledged"},
@@ -615,7 +434,8 @@ class JSONIPCServer:
         except (asyncio.IncompleteReadError, ConnectionResetError):
             logger.debug("JSONIPCServer: client disconnected")
         finally:
-            _kill_playback()
+            # Deregister writer from broadcast set (Req 7.3)
+            self._connected_writers.discard(writer)
             if active_turn_task and not active_turn_task.done():
                 active_turn_task.cancel()
             try:
@@ -624,6 +444,34 @@ class JSONIPCServer:
             except Exception:
                 pass
             logger.debug("JSONIPCServer: connection closed")
+
+    async def broadcast_agent_event(self, event_type: str, payload: dict) -> None:
+        """Broadcast an AGENT_EVENT to all connected IPC clients (Req 7.3, 7.4).
+
+        Validates *event_type* against AgentEventType._VALID before sending.
+        Unknown types are logged and dropped; dead connections are silently
+        discarded from the writers set.
+        """
+        if not AgentEventType.is_valid(event_type):
+            logger.warning(
+                "JSONIPCServer: unknown AGENT_EVENT type %r — dropped", event_type
+            )
+            return
+        msg = {
+            "type": MSG_TYPE_AGENT_EVENT,
+            "payload": {"event_type": event_type, **payload},
+        }
+        dead: list[asyncio.StreamWriter] = []
+        for writer in list(self._connected_writers):
+            try:
+                await self._write_message(writer, msg)
+            except Exception:
+                logger.debug(
+                    "JSONIPCServer: failed to write AGENT_EVENT to client — removing"
+                )
+                dead.append(writer)
+        for w in dead:
+            self._connected_writers.discard(w)
 
     async def _dispatch(
         self,
@@ -641,15 +489,14 @@ class JSONIPCServer:
                 {"type": MSG_TYPE_HEARTBEAT, "payload": {"status": "ok"}},
             )
         elif msg_type == MSG_TYPE_AUDIO_FRAME:
-            logger.debug("JSONIPCServer: received AUDIO_FRAME seq=%s", payload.get("sequence_num"))
-            # TODO (Task 1.4+): pipe to Voice_Engine
+            # Raw audio on this socket is unsupported; live voice uses the
+            # dedicated VoiceUnixServer session socket.
+            logger.debug("JSONIPCServer: received AUDIO_FRAME on non-voice socket — dropped")
         elif msg_type == MSG_TYPE_PARTIAL_TRANSCRIPT:
+            # Legacy partial transcript on this socket is no longer routed.
             logger.debug(
-                "JSONIPCServer: received PARTIAL_TRANSCRIPT text=%r is_final=%s",
-                payload.get("text"),
-                payload.get("is_final"),
+                "JSONIPCServer: received PARTIAL_TRANSCRIPT on non-voice socket — dropped"
             )
-            # TODO (Task 1.4+): forward to STT pipeline
         elif msg_type == MSG_TYPE_TURN_REQUEST:
             turn_id = payload.get("turn_id", "")
             transcript = payload.get("transcript", "")
@@ -791,7 +638,20 @@ class JSONIPCServer:
                         "payload": {"event_type": event_type, "status": "acknowledged"},
                     },
                 )
-            # END_OF_SPEECH forwarded to pipeline in later tasks
+            # END_OF_SPEECH on this socket is legacy voice; it is not routed.
+        elif msg_type == MSG_TYPE_AGENT_EVENT:
+            # Route inbound AGENT_EVENT (from internal components) to all clients
+            # (Req 7.3, 7.4, 7.5).
+            event_type = payload.get("event_type", "")
+            if not AgentEventType.is_valid(event_type):
+                logger.warning(
+                    "JSONIPCServer: unknown AGENT_EVENT sub-type %r — dropped", event_type
+                )
+                return
+            await self.broadcast_agent_event(
+                event_type,
+                {k: v for k, v in payload.items() if k != "event_type"},
+            )
         else:
             logger.warning("JSONIPCServer: unknown message type %r", msg_type)
             await self._write_message(

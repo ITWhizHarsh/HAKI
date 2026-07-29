@@ -1,0 +1,366 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create archival script and run migration": [
+      {
+        "executionId": "e6ab2796-d4ff-457f-a961-b7ff9d64dea6",
+        "chatSessionId": "sess_6bdcb1de-9742-4e9f-aee5-27efe5fd3faf",
+        "timestamp": 1785242348381
+      },
+      {
+        "executionId": "e6ab2796-d4ff-457f-a961-b7ff9d64dea6",
+        "chatSessionId": "sess_6bdcb1de-9742-4e9f-aee5-27efe5fd3faf",
+        "timestamp": 1785242455052
+      }
+    ],
+    "1. Legacy archival — back up and document the replaced modules": [
+      {
+        "executionId": "e6ab2796-d4ff-457f-a961-b7ff9d64dea6",
+        "chatSessionId": "sess_6bdcb1de-9742-4e9f-aee5-27efe5fd3faf",
+        "timestamp": 1785242455088
+      }
+    ],
+    "2.1 Add `MSG_TYPE_AGENT_EVENT` constant and `AgentEventType` class": [
+      {
+        "executionId": "9c55c935-33ca-45b6-a691-0532316a1a68",
+        "chatSessionId": "sess_9627d57b-14dd-4fea-8267-8976497b897e",
+        "timestamp": 1785243615270
+      },
+      {
+        "executionId": "9c55c935-33ca-45b6-a691-0532316a1a68",
+        "chatSessionId": "sess_9627d57b-14dd-4fea-8267-8976497b897e",
+        "timestamp": 1785243655938
+      }
+    ],
+    "2.2 Add `_connected_writers` set and `broadcast_agent_event` method to `JSONIPCServer`": [
+      {
+        "executionId": "f03e7594-5bbc-45a0-9179-e91294ddfff6",
+        "chatSessionId": "sess_a3d59c65-4d6e-4156-9701-ca8c43fb4690",
+        "timestamp": 1785246749072
+      },
+      {
+        "executionId": "f03e7594-5bbc-45a0-9179-e91294ddfff6",
+        "chatSessionId": "sess_a3d59c65-4d6e-4156-9701-ca8c43fb4690",
+        "timestamp": 1785246801111
+      }
+    ],
+    "2.3 Handle inbound `AGENT_EVENT` messages in `_dispatch`": [
+      {
+        "executionId": "5dd689a4-252f-41fb-9047-f4b7df8cf541",
+        "chatSessionId": "sess_91c61e3c-a4d5-478b-8c14-642c4568eadf",
+        "timestamp": 1785246893334
+      },
+      {
+        "executionId": "072995db-6553-4c92-ad95-ff3a68eb4bb2",
+        "chatSessionId": "sess_6484864d-825c-4f31-a80a-c277eafa553b",
+        "timestamp": 1785246912817
+      },
+      {
+        "executionId": "072995db-6553-4c92-ad95-ff3a68eb4bb2",
+        "chatSessionId": "sess_6484864d-825c-4f31-a80a-c277eafa553b",
+        "timestamp": 1785246953165
+      }
+    ],
+    "2. JSON IPC AGENT_EVENT extension — add constants and broadcast API to `server.py`": [
+      {
+        "executionId": "072995db-6553-4c92-ad95-ff3a68eb4bb2",
+        "chatSessionId": "sess_6484864d-825c-4f31-a80a-c277eafa553b",
+        "timestamp": 1785246953245
+      }
+    ],
+    "4.1 Create `Core/core/gui_agent/__init__.py` with public exports": [
+      {
+        "executionId": "bfe73241-a823-438e-8c97-c35eb07c9637",
+        "chatSessionId": "sess_92276a38-0586-4a14-9861-cf1bb33685c5",
+        "timestamp": 1785248165366
+      },
+      {
+        "executionId": "bfe73241-a823-438e-8c97-c35eb07c9637",
+        "chatSessionId": "sess_92276a38-0586-4a14-9861-cf1bb33685c5",
+        "timestamp": 1785248235117
+      }
+    ],
+    "4.2 Implement data classes and `GeminiAPIError` in `gemini_vision_client.py`": [
+      {
+        "executionId": "11cac3d8-bf66-4bec-8767-fba938428a93",
+        "chatSessionId": "sess_00b8578e-f670-4aca-8927-2f8d058b4aa5",
+        "timestamp": 1785248667431
+      },
+      {
+        "executionId": "11cac3d8-bf66-4bec-8767-fba938428a93",
+        "chatSessionId": "sess_00b8578e-f670-4aca-8927-2f8d058b4aa5",
+        "timestamp": 1785248737919
+      },
+      {
+        "executionId": "c1d305f0-c219-4798-b133-258a926506d0",
+        "chatSessionId": "sess_f0df718e-974b-461d-ab54-63cb5477c9b8",
+        "timestamp": 1785248749030
+      },
+      {
+        "executionId": "c1d305f0-c219-4798-b133-258a926506d0",
+        "chatSessionId": "sess_f0df718e-974b-461d-ab54-63cb5477c9b8",
+        "timestamp": 1785248810288
+      }
+    ],
+    "11.1 Implement `FrameBuffer` actor and `SCStream` integration": [
+      {
+        "executionId": "8b384b50-67d8-4a61-a085-deeba89a3378",
+        "chatSessionId": "sess_7e66988c-e60a-4546-9f95-4df66f538d42",
+        "timestamp": 1785248831017
+      },
+      {
+        "executionId": "8b384b50-67d8-4a61-a085-deeba89a3378",
+        "chatSessionId": "sess_7e66988c-e60a-4546-9f95-4df66f538d42",
+        "timestamp": 1785248882071
+      }
+    ],
+    "4.3 Implement `GeminiVisionClient.__init__` and `bbox_to_native`": [
+      {
+        "executionId": "c96475c1-d77a-45b6-8adb-ffb92c8ae391",
+        "chatSessionId": "sess_d5359fac-6f09-4ae7-b2c2-935a07923e7f",
+        "timestamp": 1785249080511
+      },
+      {
+        "executionId": "c96475c1-d77a-45b6-8adb-ffb92c8ae391",
+        "chatSessionId": "sess_d5359fac-6f09-4ae7-b2c2-935a07923e7f",
+        "timestamp": 1785249170925
+      }
+    ],
+    "4.4 Implement `perform_handshake` and `request_frame` (async UNIX socket)": [
+      {
+        "executionId": "d4129ba9-2edc-4657-9b9c-c9e6dbe47340",
+        "chatSessionId": "sess_9ab49bd0-9ba5-4e7f-afce-ef46d317689c",
+        "timestamp": 1785249237612
+      },
+      {
+        "executionId": "d4129ba9-2edc-4657-9b9c-c9e6dbe47340",
+        "chatSessionId": "sess_9ab49bd0-9ba5-4e7f-afce-ef46d317689c",
+        "timestamp": 1785249325457
+      }
+    ],
+    "5.1 Implement `MacQuartzExecutor` class skeleton and `ExecutorUnavailableError`": [
+      {
+        "executionId": "c82982c1-45bb-40a2-86bc-02d7075b6531",
+        "chatSessionId": "sess_b57ddd12-21b6-4364-b274-e5e288ebd5ee",
+        "timestamp": 1785249699969
+      },
+      {
+        "executionId": "c82982c1-45bb-40a2-86bc-02d7075b6531",
+        "chatSessionId": "sess_b57ddd12-21b6-4364-b274-e5e288ebd5ee",
+        "timestamp": 1785249779705
+      }
+    ],
+    "11.2 Implement `SidecarServer` UNIX socket with handshake protocol": [
+      {
+        "executionId": "ab55321a-2d4e-4036-b890-fff519cc77a7",
+        "chatSessionId": "sess_d3460784-6793-48ae-b9e3-ae7fee87bc50",
+        "timestamp": 1785249963592
+      },
+      {
+        "executionId": "ab55321a-2d4e-4036-b890-fff519cc77a7",
+        "chatSessionId": "sess_d3460784-6793-48ae-b9e3-ae7fee87bc50",
+        "timestamp": 1785249988373
+      }
+    ],
+    "11. Swift ScreenCaptureKit sidecar (`ScreenReader.swift`)": [
+      {
+        "executionId": "ab55321a-2d4e-4036-b890-fff519cc77a7",
+        "chatSessionId": "sess_d3460784-6793-48ae-b9e3-ae7fee87bc50",
+        "timestamp": 1785249988420
+      }
+    ],
+    "4.5 Implement `query_gemini` with frame lifecycle and timeout": [
+      {
+        "executionId": "ab0d58ac-4f6c-46f6-9b57-6bd444ec3796",
+        "chatSessionId": "sess_c1b466a8-c80b-433e-b341-3ee28e1ff655",
+        "timestamp": 1785250096488
+      },
+      {
+        "executionId": "ab0d58ac-4f6c-46f6-9b57-6bd444ec3796",
+        "chatSessionId": "sess_c1b466a8-c80b-433e-b341-3ee28e1ff655",
+        "timestamp": 1785250187047
+      }
+    ],
+    "4. GeminiVisionClient — core frame-fetching and Gemini query module": [
+      {
+        "executionId": "ab0d58ac-4f6c-46f6-9b57-6bd444ec3796",
+        "chatSessionId": "sess_c1b466a8-c80b-433e-b341-3ee28e1ff655",
+        "timestamp": 1785250187094
+      }
+    ],
+    "5.2 Implement `_get_display_scale` and `_to_logical` helper": [
+      {
+        "executionId": "a3b4ce6f-ca03-4ad5-a468-1628b8ac8058",
+        "chatSessionId": "sess_a4d79794-7dba-4b44-af42-f60b015bfb06",
+        "timestamp": 1785250581732
+      },
+      {
+        "executionId": "a3b4ce6f-ca03-4ad5-a468-1628b8ac8058",
+        "chatSessionId": "sess_a4d79794-7dba-4b44-af42-f60b015bfb06",
+        "timestamp": 1785250643027
+      }
+    ],
+    "6.1 Implement `HITLBridge` class with pause/resume event logic": [
+      {
+        "executionId": "2e7904a2-1abe-4599-a800-0fcac7274308",
+        "chatSessionId": "sess_d7101858-60ba-4e12-9550-8a9948a7a538",
+        "timestamp": 1785250669452
+      },
+      {
+        "executionId": "2e7904a2-1abe-4599-a800-0fcac7274308",
+        "chatSessionId": "sess_d7101858-60ba-4e12-9550-8a9948a7a538",
+        "timestamp": 1785250791161
+      }
+    ],
+    "5.3 Implement `click`, `_post_click`, `type_text`, and `scroll`": [
+      {
+        "executionId": "4ebc0aad-0095-4c41-980e-19eccd1964ed",
+        "chatSessionId": "sess_988d9eec-25c3-40ac-97d1-857e6e46c62b",
+        "timestamp": 1785251085843
+      },
+      {
+        "executionId": "4ebc0aad-0095-4c41-980e-19eccd1964ed",
+        "chatSessionId": "sess_988d9eec-25c3-40ac-97d1-857e6e46c62b",
+        "timestamp": 1785251182993
+      }
+    ],
+    "5. MacQuartzExecutor — HID event dispatch with runtime display-scale": [
+      {
+        "executionId": "4ebc0aad-0095-4c41-980e-19eccd1964ed",
+        "chatSessionId": "sess_988d9eec-25c3-40ac-97d1-857e6e46c62b",
+        "timestamp": 1785251183029
+      }
+    ],
+    "6.2 Implement `pause_and_wait` with 60 s timeout": [
+      {
+        "executionId": "463003d0-fd99-4e60-8d17-88eaf735bf63",
+        "chatSessionId": "sess_15f52124-0ce2-40f8-8232-3903664d8e4c",
+        "timestamp": 1785251222784
+      },
+      {
+        "executionId": "463003d0-fd99-4e60-8d17-88eaf735bf63",
+        "chatSessionId": "sess_15f52124-0ce2-40f8-8232-3903664d8e4c",
+        "timestamp": 1785251280759
+      }
+    ],
+    "6.3 Implement `inject_response`": [
+      {
+        "executionId": "f3aaf974-964f-4fdb-ba33-bb1d45c97342",
+        "chatSessionId": "sess_48380050-7905-41e0-8b67-ae2758fe8bc0",
+        "timestamp": 1785251291242
+      },
+      {
+        "executionId": "f3aaf974-964f-4fdb-ba33-bb1d45c97342",
+        "chatSessionId": "sess_48380050-7905-41e0-8b67-ae2758fe8bc0",
+        "timestamp": 1785251368624
+      }
+    ],
+    "6. HITLBridge — secure field detection, pause/resume, and timeout": [
+      {
+        "executionId": "f3aaf974-964f-4fdb-ba33-bb1d45c97342",
+        "chatSessionId": "sess_48380050-7905-41e0-8b67-ae2758fe8bc0",
+        "timestamp": 1785251368666
+      }
+    ],
+    "8.1 Implement `SidecarAgentLoop` class with state machine and `run` method": [
+      {
+        "executionId": "82e42d86-022b-49e3-82ba-355b2ebe1859",
+        "chatSessionId": "sess_43f51b71-df69-4e7f-b73b-cfc988dac4b2",
+        "timestamp": 1785251383962
+      },
+      {
+        "executionId": "82e42d86-022b-49e3-82ba-355b2ebe1859",
+        "chatSessionId": "sess_43f51b71-df69-4e7f-b73b-cfc988dac4b2",
+        "timestamp": 1785251504838
+      }
+    ],
+    "8.2 Implement the `_run_loop` with See→Think→Act→Verify and max-steps enforcement": [
+      {
+        "executionId": "2a344bc2-9035-4a84-8122-e18c9d30281c",
+        "chatSessionId": "sess_9a6545dc-50c9-4815-89b1-b9ac3d8fb754",
+        "timestamp": 1785251524018
+      },
+      {
+        "executionId": "2a344bc2-9035-4a84-8122-e18c9d30281c",
+        "chatSessionId": "sess_9a6545dc-50c9-4815-89b1-b9ac3d8fb754",
+        "timestamp": 1785251658117
+      }
+    ],
+    "9.1 Add `SpawnGuiAgentCall` schema and update `VOICE_TOOL_GRAMMAR` in `tools.py`": [
+      {
+        "executionId": "d85a38bb-557f-4f09-acc2-94912a664d90",
+        "chatSessionId": "sess_7ba41493-b15d-4dd9-8fe2-d300a5217f15",
+        "timestamp": 1785251672310
+      },
+      {
+        "executionId": "d85a38bb-557f-4f09-acc2-94912a664d90",
+        "chatSessionId": "sess_7ba41493-b15d-4dd9-8fe2-d300a5217f15",
+        "timestamp": 1785251734470
+      }
+    ],
+    "8.3 Implement `_see_think` with 3-retry / 2 s delay on `GeminiAPIError`": [
+      {
+        "executionId": "7f518923-3265-4d19-b9bb-df95097cf73b",
+        "chatSessionId": "sess_ef9b41d1-e37f-4a75-b8e1-3bf852df2f22",
+        "timestamp": 1785252140685
+      },
+      {
+        "executionId": "7f518923-3265-4d19-b9bb-df95097cf73b",
+        "chatSessionId": "sess_ef9b41d1-e37f-4a75-b8e1-3bf852df2f22",
+        "timestamp": 1785252210286
+      }
+    ],
+    "8. SidecarAgentLoop — See→Think→Act→Verify cognitive cycle": [
+      {
+        "executionId": "7f518923-3265-4d19-b9bb-df95097cf73b",
+        "chatSessionId": "sess_ef9b41d1-e37f-4a75-b8e1-3bf852df2f22",
+        "timestamp": 1785252210339
+      }
+    ],
+    "9.2 Add `_start_agent_in_thread` helper and `VoiceToolAdapter._execute_gui_agent_spawn`": [
+      {
+        "executionId": "ec976720-8d21-4dce-abcf-3fcbf6d6d052",
+        "chatSessionId": "sess_332c9bd2-b95e-4a41-b715-ea14702224d0",
+        "timestamp": 1785252236956
+      }
+    ],
+    "9. spawn_gui_agent tool — Pipecat LLM tool registration and thread launch": [
+      {
+        "executionId": "ec976720-8d21-4dce-abcf-3fcbf6d6d052",
+        "chatSessionId": "sess_332c9bd2-b95e-4a41-b715-ea14702224d0",
+        "timestamp": 1785252236983
+      }
+    ],
+    "13.1 Wire `JSONIPCServer` with `_connected_writers` into `SidecarAgentLoop` and `HITLBridge`": [
+      {
+        "executionId": "7622d5e5-1b74-412d-847d-d44449052ebf",
+        "chatSessionId": "sess_de2406bc-47ed-485e-9477-642be6e3c5de",
+        "timestamp": 1785252338240
+      },
+      {
+        "executionId": "7622d5e5-1b74-412d-847d-d44449052ebf",
+        "chatSessionId": "sess_de2406bc-47ed-485e-9477-642be6e3c5de",
+        "timestamp": 1785252798447
+      }
+    ],
+    "13.2 Ensure `gui_agent` package is importable from `Core/`": [
+      {
+        "executionId": "a76e427f-10d0-4663-ba4c-b4d3254b34d3",
+        "chatSessionId": "sess_63fd98d7-8a48-46f4-b055-8473381746f5",
+        "timestamp": 1785252832067
+      },
+      {
+        "executionId": "a76e427f-10d0-4663-ba4c-b4d3254b34d3",
+        "chatSessionId": "sess_63fd98d7-8a48-46f4-b055-8473381746f5",
+        "timestamp": 1785252943171
+      }
+    ],
+    "13. Integration wiring — connect all components in `haki_core_service.py`": [
+      {
+        "executionId": "a76e427f-10d0-4663-ba4c-b4d3254b34d3",
+        "chatSessionId": "sess_63fd98d7-8a48-46f4-b055-8473381746f5",
+        "timestamp": 1785252943203
+      }
+    ]
+  }
+}

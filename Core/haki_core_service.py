@@ -141,8 +141,10 @@ async def _run(socket_path: str, transport: str) -> None:
     from core.scheduler import Scheduler, create_sqlite_task_tracker
     from core.model_provider import (
         LLMRouter, LLMRouterConfig,
-        STTEngine, TTSEngine, EmbeddingsEngine,
+        EmbeddingsEngine,
     )
+    from core.voice.cloud_gate import CloudEscalationGate
+    from core.ipc.voice_unix_server import start_replacement_session
 
     # ----------------------------------------------------------------
     # Read env vars — see Misc/api_keys_setup.md for the full list
@@ -150,8 +152,6 @@ async def _run(socket_path: str, transport: str) -> None:
     groq_key      = os.environ.get("HAKI_GROQ_API_KEY")
     cerebras_key  = os.environ.get("HAKI_CEREBRAS_API_KEY")
     gemini_key    = os.environ.get("HAKI_GEMINI_API_KEY")
-    deepgram_key  = os.environ.get("HAKI_DEEPGRAM_API_KEY")
-    cartesia_key  = os.environ.get("HAKI_CARTESIA_API_KEY")
 
     if not any([groq_key, cerebras_key, gemini_key]):
         logger.warning(
@@ -160,7 +160,8 @@ async def _run(socket_path: str, transport: str) -> None:
         )
 
     # ----------------------------------------------------------------
-    # LLM Router  Groq → Cerebras → Gemini → local MLX
+    # LLM Router  Groq → Cerebras → Gemini → local MLX  (non-voice only)
+    # Live voice uses VoiceLLMRouter / VoiceLocalMLXService, not this router.
     # ----------------------------------------------------------------
     llm_router = LLMRouter(
         config=LLMRouterConfig(
@@ -175,16 +176,12 @@ async def _run(socket_path: str, transport: str) -> None:
     )
 
     # ----------------------------------------------------------------
-    # STT Engine  Groq Whisper → Deepgram Flux → WhisperKit ANE → SenseVoice
+    # CloudEscalationGate — initialised with Gemini disabled for every
+    # new voice session (Req 8.1).  The gate is passed into the voice
+    # session pipeline; no voice session starts with Gemini enabled.
     # ----------------------------------------------------------------
-    stt_engine = STTEngine(groq_api_key=groq_key, deepgram_api_key=deepgram_key)
-    logger.info("STTEngine ready (groq=%s deepgram=%s)", bool(groq_key), bool(deepgram_key))
-
-    # ----------------------------------------------------------------
-    # TTS Engine  Kokoro CoreML/ANE → ChatTTS → Cartesia Sonic 3.5
-    # ----------------------------------------------------------------
-    tts_engine = TTSEngine(cartesia_api_key=cartesia_key)
-    logger.info("TTSEngine ready (cartesia=%s)", bool(cartesia_key))
+    cloud_escalation_gate = CloudEscalationGate()
+    logger.info("CloudEscalationGate ready (Gemini disabled by default for every session)")
 
     # ----------------------------------------------------------------
     # Embeddings  Granite ModernBERT 32k → Gemini Embed API fallback
@@ -210,8 +207,6 @@ async def _run(socket_path: str, transport: str) -> None:
     # ----------------------------------------------------------------
     # Initialise HAKI Brain (LLM Wiki — 3-folder Obsidian pipeline)
     # ----------------------------------------------------------------
-    # Default vault path: ~/Obsidian/HAKI_Brain
-    # User can override via HAKI_OBSIDIAN_VAULT env var
     obsidian_root = Path(
         os.environ.get("HAKI_OBSIDIAN_VAULT",
                        str(Path.home() / "Obsidian" / "HAKI_Brain"))
@@ -251,19 +246,16 @@ async def _run(socket_path: str, transport: str) -> None:
             logger.info("HAKIBrain: ingested %d pending file(s) at startup", len(pending))
 
     # ----------------------------------------------------------------
-    # Initialise Orchestrator
+    # Initialise Orchestrator (non-voice turns only)
     # ----------------------------------------------------------------
     orchestrator = Orchestrator(
         memory_brain=memory_brain,
         llm_router=llm_router,
-        stt_engine=stt_engine,
-        tts_engine=tts_engine,
         haki_brain=haki_brain,
     )
-    logger.info("Orchestrator created with all engines wired")
+    logger.info("Orchestrator created (non-voice, stt_engine/tts_engine removed)")
 
-    # Seed cross-session memory from the Obsidian conversation logs so HAKI
-    # remembers what was being discussed before the app was last quit.
+    # Seed cross-session memory from the Obsidian conversation logs
     try:
         loaded = orchestrator.load_persistent_history()
         if loaded:
@@ -299,6 +291,10 @@ async def _run(socket_path: str, transport: str) -> None:
         )
         logger.info("Starting JSON IPC server on unix:%s", socket_path)
 
+    # Expose the JSONIPCServer instance for GUI agent wiring (Req 5.1, 7.3, 8.1).
+    # Only JSONIPCServer supports broadcast_agent_event; gRPC server is left unwired.
+    _json_ipc_server = server if transport == "json" else None
+
     # Install signal handlers that request graceful shutdown
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
@@ -310,15 +306,126 @@ async def _run(socket_path: str, transport: str) -> None:
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, _request_stop, sig.name)
 
-    # Start the server
+    # Start the non-voice IPC server
     await server.start()  # type: ignore[attr-defined]
     logger.info("HAKI Core started (transport=%s, socket=%s)", transport, socket_path)
 
-    # Pre-warm the embedding model in the background AFTER the IPC server is
-    # already listening.  Loading sentence-transformers is CPU-heavy and would
-    # compete with the event loop if run before startup.  Queries that arrive
-    # before pre-warm completes skip semantic search and fall back to plain
-    # text matching (the _model_ready guard in HAKIBrain.search).
+    # ----------------------------------------------------------------
+    # Start the replacement voice session (production route).
+    # VoiceUnixServer + VoiceSessionPipeline is the live voice path.
+    # CloudEscalationGate initialises Gemini disabled for every session
+    # (Req 8.1).  Failures are reported directly without legacy fallback.
+    # ----------------------------------------------------------------
+    voice_handle = None
+    try:
+        # Monkeypatch: start_replacement_session normally checks the dev gate;
+        # for the production cutover we call the components directly without
+        # the gate env-var requirement.
+        from core.voice.session import VoiceSession
+        from core.voice.pipeline import (
+            VoiceSessionPipeline,
+            VoiceIngressProcessors,
+            PipecatFrameAdapter,
+            VoicePipelineSinks,
+        )
+        from core.voice.asr_bridge import AuthenticatedRingSlotReader, RingSlotDescriptor
+        from core.ipc.voice_unix_server import (
+            VoiceUnixServer,
+            ReplacementSessionHandle,
+        )
+        from uuid import uuid4 as _uuid4
+
+        _session_id = _uuid4()
+
+        class _NullRingSlotReader:
+            def __init__(self) -> None:
+                self.session_id = _session_id
+
+            async def map_slot(self, descriptor: "RingSlotDescriptor") -> bytes:
+                return b""
+
+            async def release_slot(self, descriptor: "RingSlotDescriptor") -> None:
+                pass
+
+        _session = VoiceSession(_session_id)
+        # Register the session with Gemini disabled (Req 8.1)
+        cloud_escalation_gate.register_session(_session_id)
+
+        _server_voice = VoiceUnixServer(
+            session_id=_session_id,
+            on_message=None,
+            on_turn_discarded=None,
+        )
+        _frame_adapter = PipecatFrameAdapter()
+        _ring_reader = _NullRingSlotReader()
+        _ingress = VoiceIngressProcessors(
+            session=_session,
+            ring_reader=_ring_reader,
+            frame_adapter=_frame_adapter,
+        )
+        _pipeline = VoiceSessionPipeline(
+            session=_session,
+            ingress=_ingress,
+            sinks=VoicePipelineSinks(),
+        )
+
+        async def _on_transcript_message(validated: object) -> None:
+            try:
+                await _pipeline.ingest_transcript_message(validated)
+            except Exception:
+                logger.debug("voice_session: transcript ingress error", exc_info=True)
+
+        _server_voice._on_message = _on_transcript_message  # type: ignore[assignment]
+
+        # Wire the JSONIPCServer into the VoiceToolAdapter so gui_agent.spawn
+        # calls can broadcast AGENT_EVENTs and launch SidecarAgentLoop threads
+        # (Req 5.1, 7.3, 8.1, 13.1).
+        if _json_ipc_server is not None:
+            try:
+                from core.voice.tools import VoiceToolAdapter  # noqa: PLC0415
+                _tool_adapter = VoiceToolAdapter(ipc_server=_json_ipc_server)
+                _pipeline._tool_adapter = _tool_adapter
+                _pipeline.wire_ipc_server(_json_ipc_server)
+                logger.info("haki_core_service: wired JSONIPCServer into VoiceToolAdapter")
+            except Exception as exc:
+                logger.debug("haki_core_service: could not wire ipc_server into tool adapter: %s", exc)
+
+        await _server_voice.start()
+        try:
+            await _pipeline.start()
+        except Exception as exc:
+            await _server_voice.stop()
+            logger.error(
+                "HAKI voice session pipeline failed to start: %s — voice unavailable",
+                exc,
+            )
+        else:
+            voice_handle = ReplacementSessionHandle(
+                server=_server_voice,
+                session=_session,
+                pipeline=_pipeline,
+            )
+            logger.info(
+                "VoiceUnixServer started (session=%s socket=%s)",
+                _session_id,
+                _server_voice.socket_path,
+            )
+    except Exception as exc:
+        logger.error(
+            "HAKI voice session could not start: %s — voice unavailable (no legacy fallback)",
+            exc,
+        )
+
+    # Check locally provisioned replacement-voice prerequisites after the IPC
+    # server is listening.
+    from core.voice.resources import run_startup_voice_health_check
+
+    voice_health_task = asyncio.create_task(
+        run_startup_voice_health_check(logger=logger),
+        name="haki-local-voice-availability",
+    )
+
+    # Pre-warm the embedding model in the background
     async def _prewarm_embeddings() -> None:
         try:
             loop = asyncio.get_running_loop()
@@ -337,6 +444,23 @@ async def _run(socket_path: str, transport: str) -> None:
 
     # Graceful shutdown
     logger.info("Stopping HAKI Core…")
+    if not voice_health_task.done():
+        voice_health_task.cancel()
+        try:
+            await voice_health_task
+        except asyncio.CancelledError:
+            pass
+    if voice_handle is not None:
+        try:
+            await voice_handle.shutdown()
+            logger.info("VoiceSessionPipeline stopped cleanly")
+        except Exception as exc:
+            logger.warning("Voice session shutdown raised: %s", exc)
+        if hasattr(voice_handle, 'session'):
+            try:
+                cloud_escalation_gate.end_session(voice_handle.session.session_id)
+            except Exception:
+                pass
     pipeline_scheduler.stop()
     await server.stop(grace=5.0)  # type: ignore[attr-defined]
     logger.info("HAKI Core stopped cleanly")

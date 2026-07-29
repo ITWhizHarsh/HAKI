@@ -515,3 +515,312 @@ public final class ScreenReader: ScreenReaderProtocol, @unchecked Sendable {
         })
     }
 }
+
+// MARK: - Gemini Sidecar Architecture (Tasks 11.1, 11.2)
+//
+// Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 10.4
+//
+// FrameBuffer actor — rolling single-slot frame store (Req 2.5).
+// SidecarServer — UNIX socket server for the Python GeminiVisionClient (Req 2.3–2.7).
+
+import CoreGraphics
+import CoreImage
+import Network
+
+// MARK: - FrameBuffer
+
+/// Rolling single-frame buffer protected by Swift's actor isolation (Req 2.5).
+///
+/// Only the most recently captured frame is retained; older frames are
+/// discarded on each ``update(_:)`` call.
+actor FrameBuffer {
+    private var latestFrame: Data?
+
+    /// Replace the stored frame with *frame*.
+    func update(_ frame: Data) {
+        latestFrame = frame
+    }
+
+    /// Return the most recently stored frame, or ``nil`` if none has been
+    /// captured yet.
+    func latest() -> Data? {
+        latestFrame
+    }
+}
+
+// MARK: - SidecarServer
+
+/// UNIX-socket server that streams JPEG frames to the Python GeminiVisionClient.
+///
+/// Protocol (newline-delimited, Req 2.3):
+/// ```
+/// Client connects
+///   → Server sends:  {"display_scale":<float>,"width":2560,"height":1600}\n
+///   → Client sends:  REQUEST_FRAME\n
+///   → Server sends:  <4-byte big-endian uint32 frame length><JPEG bytes>
+///   → (Client may send REQUEST_FRAME\n again for the next frame)
+/// ```
+///
+/// Socket permissions are set to 0600 after bind so only the owning user can
+/// connect (Req 10.4).
+///
+/// Screen Recording permission is checked at startup; the process exits with
+/// code 1 when it is not granted (Req 2.6).
+final class SidecarServer: @unchecked Sendable {
+
+    // MARK: - Constants
+
+    static let socketPath: String = {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return "\(home)/.haki/sidecar_frames.sock"
+    }()
+
+    private static let nativeWidth  = 2560
+    private static let nativeHeight = 1600
+
+    // Default JPEG quality — overridable via ``--jpeg-quality`` CLI arg (Req 2.2).
+    var jpegQuality: Double = 0.85
+
+    // MARK: - State
+
+    private let frameBuffer = FrameBuffer()
+    private var scStream: SCStream?
+    private var streamOutput: _StreamOutput?
+    private var listenerFD: Int32 = -1
+    private var displayScale: Double = 2.0
+
+    // MARK: - Init
+
+    init(jpegQuality: Double = 0.85) {
+        self.jpegQuality = max(0.01, min(1.0, jpegQuality))
+    }
+
+    // MARK: - Start
+
+    /// Start the ScreenCaptureKit stream and the UNIX socket server.
+    ///
+    /// - Throws: If Screen Recording permission is not granted (Req 2.6) or
+    ///   if the UNIX socket cannot be created.
+    func start() async throws {
+        // 1. Query display scale (Req 2.7)
+        let mainDisplay = CGMainDisplayID()
+        displayScale = _queryDisplayScale(displayID: mainDisplay)
+
+        // 2. Check Screen Recording permission (Req 2.6)
+        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        guard !content.displays.isEmpty else {
+            fputs("SidecarServer: Screen Recording permission denied. "
+                  + "Grant permission in System Settings → Privacy & Security.\n", stderr)
+            exit(1)
+        }
+
+        // 3. Start SCStream at 2560×1600 (Req 2.1)
+        guard let display = content.displays.first else {
+            fputs("SidecarServer: no display found.\n", stderr)
+            exit(1)
+        }
+
+        let config = SCStreamConfiguration()
+        config.width  = Self.nativeWidth
+        config.height = Self.nativeHeight
+        config.pixelFormat          = kCVPixelFormatType_32BGRA
+        config.showsCursor          = false
+        config.minimumFrameInterval = CMTime(value: 1, timescale: 30) // 30 fps
+
+        let filter   = SCContentFilter(display: display, excludingWindows: [])
+        let output   = _StreamOutput(buffer: frameBuffer, jpegQuality: jpegQuality)
+        streamOutput = output
+        let stream   = SCStream(filter: filter, configuration: config, delegate: nil)
+        try stream.addStreamOutput(output, type: .screen, sampleHandlerQueue: .global())
+        try await stream.startCapture()
+        scStream = stream
+
+        // 4. Bind UNIX socket (Req 2.4)
+        try _bindSocket()
+
+        // 5. Accept connections loop (Req 2.3)
+        _acceptLoop()
+    }
+
+    // MARK: - Private: Display scale query (Req 2.7)
+
+    private func _queryDisplayScale(displayID: CGDirectDisplayID) -> Double {
+        let physMM  = CGDisplayScreenSize(displayID)    // millimetres
+        let bounds  = CGDisplayBounds(displayID)        // pixels
+        guard physMM.width > 0 else { return 2.0 }
+        let pointWidth = physMM.width / 25.4 * 72.0
+        return Double(bounds.size.width) / pointWidth
+    }
+
+    // MARK: - Private: UNIX socket bind (Req 2.4, 10.4)
+
+    private func _bindSocket() throws {
+        // Ensure ~/.haki/ directory exists
+        let dir = (Self.socketPath as NSString).deletingLastPathComponent
+        try FileManager.default.createDirectory(atPath: dir,
+                                                withIntermediateDirectories: true)
+
+        // Remove stale socket
+        try? FileManager.default.removeItem(atPath: Self.socketPath)
+
+        listenerFD = socket(AF_UNIX, SOCK_STREAM, 0)
+        guard listenerFD >= 0 else {
+            throw NSError(domain: "SidecarServer", code: Int(errno),
+                          userInfo: [NSLocalizedDescriptionKey: "socket() failed"])
+        }
+
+        var addr = sockaddr_un()
+        addr.sun_family = sa_family_t(AF_UNIX)
+        let pathBytes = Self.socketPath.utf8CString
+        withUnsafeMutableBytes(of: &addr.sun_path) { ptr in
+            pathBytes.withUnsafeBytes { src in
+                ptr.copyMemory(from: src.prefix(ptr.count))
+            }
+        }
+
+        let bindResult = withUnsafePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                bind(listenerFD, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+            }
+        }
+        guard bindResult == 0 else {
+            throw NSError(domain: "SidecarServer", code: Int(errno),
+                          userInfo: [NSLocalizedDescriptionKey: "bind() failed"])
+        }
+
+        // Set permissions to 0600 (owner read/write only) — Req 10.4
+        chmod(Self.socketPath, S_IRUSR | S_IWUSR)
+
+        guard Darwin.listen(listenerFD, 5) == 0 else {
+            throw NSError(domain: "SidecarServer", code: Int(errno),
+                          userInfo: [NSLocalizedDescriptionKey: "listen() failed"])
+        }
+    }
+
+    // MARK: - Private: Accept loop (Req 2.3)
+
+    private func _acceptLoop() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            while true {
+                let clientFD = accept(self.listenerFD, nil, nil)
+                guard clientFD >= 0 else { continue }
+                DispatchQueue.global(qos: .userInitiated).async {
+                    self._handleClient(fd: clientFD)
+                }
+            }
+        }
+    }
+
+    // MARK: - Private: Client handler (Req 2.3, 2.7)
+
+    private func _handleClient(fd: Int32) {
+        defer { close(fd) }
+
+        // Send handshake JSON (Req 2.7)
+        let handshake: [String: Any] = [
+            "display_scale": displayScale,
+            "width":  Self.nativeWidth,
+            "height": Self.nativeHeight,
+        ]
+        guard let handshakeData = try? JSONSerialization.data(withJSONObject: handshake),
+              let nl = "\n".data(using: .utf8) else { return }
+
+        var hs = handshakeData
+        hs.append(nl)
+        guard _writeAll(fd: fd, data: hs) else { return }
+
+        // Serve REQUEST_FRAME commands (Req 2.3)
+        var lineBuffer = Data()
+        var readBuf = [UInt8](repeating: 0, count: 256)
+
+        while true {
+            let n = recv(fd, &readBuf, readBuf.count, 0)
+            if n <= 0 { break }
+            lineBuffer.append(contentsOf: readBuf[..<n])
+
+            while let newlineIdx = lineBuffer.firstIndex(of: UInt8(ascii: "\n")) {
+                let line = String(data: lineBuffer[lineBuffer.startIndex..<newlineIdx],
+                                  encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                lineBuffer = lineBuffer[lineBuffer.index(after: newlineIdx)...]
+
+                if line == "REQUEST_FRAME" {
+                    _serveFrame(fd: fd)
+                }
+            }
+        }
+    }
+
+    // MARK: - Private: Frame serving (Req 2.3, 2.5)
+
+    private func _serveFrame(fd: Int32) {
+        // Use a semaphore to await the actor-isolated latest() call
+        let sem = DispatchSemaphore(value: 0)
+        var frameData: Data?
+        Task {
+            frameData = await frameBuffer.latest()
+            sem.signal()
+        }
+        sem.wait()
+
+        guard let jpeg = frameData else { return }
+
+        // 4-byte big-endian length prefix (Req 2.3)
+        var length = UInt32(jpeg.count).bigEndian
+        let lengthData = Data(bytes: &length, count: 4)
+        var payload = lengthData
+        payload.append(jpeg)
+        _ = _writeAll(fd: fd, data: payload)
+    }
+
+    // MARK: - Private: Write helper
+
+    private func _writeAll(fd: Int32, data: Data) -> Bool {
+        var remaining = data
+        while !remaining.isEmpty {
+            let n = remaining.withUnsafeBytes { ptr in
+                send(fd, ptr.baseAddress!, ptr.count, 0)
+            }
+            if n <= 0 { return false }
+            remaining = remaining.dropFirst(n)
+        }
+        return true
+    }
+}
+
+// MARK: - _StreamOutput
+
+/// SCStreamOutput implementation that compresses frames to JPEG and pushes them
+/// into the FrameBuffer (Req 2.2, 2.5).
+private final class _StreamOutput: NSObject, SCStreamOutput {
+
+    private let buffer: FrameBuffer
+    private let jpegQuality: Double
+
+    init(buffer: FrameBuffer, jpegQuality: Double) {
+        self.buffer = buffer
+        self.jpegQuality = jpegQuality
+    }
+
+    func stream(
+        _ stream: SCStream,
+        didOutputSampleBuffer sampleBuffer: CMSampleBuffer,
+        of outputType: SCStreamOutputType
+    ) {
+        guard outputType == .screen,
+              let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+        let ciImage   = CIImage(cvImageBuffer: imageBuffer)
+        let context   = CIContext()
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
+
+        let nsImage   = NSBitmapImageRep(cgImage: cgImage)
+        let jpegProps = [NSBitmapImageRep.PropertyKey.compressionFactor: jpegQuality]
+        guard let jpeg = nsImage.representation(using: .jpeg, properties: jpegProps) else { return }
+
+        // Update the rolling frame buffer with the latest JPEG (Req 2.2, 2.5).
+        Task {
+            await buffer.update(jpeg)
+        }
+    }
+}

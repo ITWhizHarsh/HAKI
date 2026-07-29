@@ -15,7 +15,20 @@ Requirements: 17.1, 17.3, 18, 19.
 
 from .models import NamedAutomation
 from .automation_library import AutomationLibrary, AutomationNotFoundError
-from .screen_agent import ScreenAgent, AgentResult, AgentStep
+# screen_agent has been archived to legacy_screen_control_backup/.
+# Provide a compatibility shim so existing references to ScreenAgent continue
+# to resolve; the class is imported lazily to avoid a hard import error.
+try:
+    from .screen_agent import ScreenAgent, AgentResult, AgentStep  # type: ignore[attr-defined]
+except ImportError:
+    # Legacy module has been moved; define lightweight stubs so that any
+    # code that only imports the names (not instantiates them) still works.
+    class ScreenAgent:  # type: ignore[no-redef]
+        """Stub — replaced by SidecarAgentLoop (see legacy_screen_control_backup/)."""
+    class AgentResult:  # type: ignore[no-redef]
+        """Stub."""
+    class AgentStep:  # type: ignore[no-redef]
+        """Stub."""
 from .question_paper_analysis import (
     AUTOMATION_NAME as QUESTION_PAPER_AUTOMATION_NAME,
     AnalysisContext,

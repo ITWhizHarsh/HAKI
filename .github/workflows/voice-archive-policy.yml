@@ -1,0 +1,33 @@
+name: Voice archive policy
+
+on:
+  pull_request:
+    paths:
+      - "legacy_pipeline_backup/**"
+      - "legacy_voice_manifest.yaml"
+      - "tools/archive_legacy_voice.py"
+      - "tools/check_voice_archive.py"
+      - "Core/**"
+      - "HAKI/**"
+      - "start_haki.sh"
+      - ".github/workflows/voice-archive-policy.yml"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  enforce-static-archive-isolation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify deterministic archive and zero runtime coupling
+        run: python tools/check_voice_archive.py --repo-root . --manifest legacy_voice_manifest.yaml
+      - name: Verify replacement voice import boundary
+        run: python tools/check_voice_import_boundary.py --repo-root .
+      - name: Exercise archive-policy fixtures
+        run: python -m pytest Core/tests/test_voice_archive_policy.py -q

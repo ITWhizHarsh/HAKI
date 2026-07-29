@@ -1,0 +1,342 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Add `HAKIFrontend` SPM executable target and create source directory scaffold": [
+      {
+        "executionId": "4b7536f4-6a09-47d6-b547-dae4f49b88f5",
+        "chatSessionId": "sess_8bcf0dc2-4cff-4c95-a08d-646c9bdcceed",
+        "timestamp": 1785263033186
+      },
+      {
+        "executionId": "4b7536f4-6a09-47d6-b547-dae4f49b88f5",
+        "chatSessionId": "sess_8bcf0dc2-4cff-4c95-a08d-646c9bdcceed",
+        "timestamp": 1785263220053
+      }
+    ],
+    "2.1 Implement `HAKIState` enum with all six cases and computed properties": [
+      {
+        "executionId": "3f09ba85-725c-4013-bcbe-0ea6b3eb356c",
+        "chatSessionId": "sess_f02fb537-a4af-445a-b3d1-4773fabc1f5f",
+        "timestamp": 1785263256580
+      },
+      {
+        "executionId": "3f09ba85-725c-4013-bcbe-0ea6b3eb356c",
+        "chatSessionId": "sess_f02fb537-a4af-445a-b3d1-4773fabc1f5f",
+        "timestamp": 1785263398421
+      }
+    ],
+    "2.4 Implement `HAKIStateModel` `@MainActor @Observable` class": [
+      {
+        "executionId": "e8db7ad1-dd5a-4bbf-b979-ade14d613a9f",
+        "chatSessionId": "sess_6dda1f5b-f137-4b82-9e07-2d03c4424a92",
+        "timestamp": 1785263410144
+      },
+      {
+        "executionId": "e8db7ad1-dd5a-4bbf-b979-ade14d613a9f",
+        "chatSessionId": "sess_6dda1f5b-f137-4b82-9e07-2d03c4424a92",
+        "timestamp": 1785263534543
+      }
+    ],
+    "2. Implement `HAKIState` enum and `HAKIStateModel` observable": [
+      {
+        "executionId": "e8db7ad1-dd5a-4bbf-b979-ade14d613a9f",
+        "chatSessionId": "sess_6dda1f5b-f137-4b82-9e07-2d03c4424a92",
+        "timestamp": 1785263534576
+      }
+    ],
+    "3.1 Implement `HAKIApp` struct with `@main`, `App` conformance, and `init()`": [
+      {
+        "executionId": "c417bbb2-6752-4c7f-8dd1-ff5e72bbf56c",
+        "chatSessionId": "sess_114a1c42-3594-415d-b2ee-cf50520b4be4",
+        "timestamp": 1785263550610
+      },
+      {
+        "executionId": "c417bbb2-6752-4c7f-8dd1-ff5e72bbf56c",
+        "chatSessionId": "sess_114a1c42-3594-415d-b2ee-cf50520b4be4",
+        "timestamp": 1785263858562
+      }
+    ],
+    "3.2 Implement `HAKIApp.body` with `WindowGroup` and `MenuBarExtra` scenes": [
+      {
+        "executionId": "8fd7ddef-5dc7-45d6-acac-d27f034e498f",
+        "chatSessionId": "sess_26eae08a-036a-4a90-8f32-e563c58a60a7",
+        "timestamp": 1785263873938
+      },
+      {
+        "executionId": "8fd7ddef-5dc7-45d6-acac-d27f034e498f",
+        "chatSessionId": "sess_26eae08a-036a-4a90-8f32-e563c58a60a7",
+        "timestamp": 1785264003483
+      }
+    ],
+    "3.3 Implement IPC retry loop `startIPCListener()`": [
+      {
+        "executionId": "a4f0ae2d-a6e7-4f43-9d17-35d127af9b27",
+        "chatSessionId": "sess_d7e38a22-0e77-4cf3-a97c-42b82af23eef",
+        "timestamp": 1785264017538
+      },
+      {
+        "executionId": "a4f0ae2d-a6e7-4f43-9d17-35d127af9b27",
+        "chatSessionId": "sess_d7e38a22-0e77-4cf3-a97c-42b82af23eef",
+        "timestamp": 1785264128180
+      }
+    ],
+    "3.4 Implement `handleServerMessage(_:)` IPC state dispatch": [
+      {
+        "executionId": "72adfa9c-f015-4563-9a61-77c674cfb74c",
+        "chatSessionId": "sess_09e676cd-b8f2-450f-8878-22e8a25886ce",
+        "timestamp": 1785264140374
+      },
+      {
+        "executionId": "72adfa9c-f015-4563-9a61-77c674cfb74c",
+        "chatSessionId": "sess_09e676cd-b8f2-450f-8878-22e8a25886ce",
+        "timestamp": 1785264259850
+      }
+    ],
+    "5. Implement `ConversationEntry` scaffold and `MainWorkspaceView`": [
+      {
+        "executionId": "f5348a80-4b11-48ed-ba81-bb5d2944e65a",
+        "chatSessionId": "sess_b7f4aa15-6b6b-4776-a062-da0f306ab714",
+        "timestamp": 1785264315089
+      },
+      {
+        "executionId": "f5348a80-4b11-48ed-ba81-bb5d2944e65a",
+        "chatSessionId": "sess_b7f4aa15-6b6b-4776-a062-da0f306ab714",
+        "timestamp": 1785264390672
+      }
+    ],
+    "3.7 Implement `setupAudioTap()` with RMS computation": [
+      {
+        "executionId": "5bdadf60-ac0c-4e93-91a3-11a172553f27",
+        "chatSessionId": "sess_df0ec2d3-ddcd-4b6a-94bb-35d4a5ba8ddb",
+        "timestamp": 1785264403908
+      },
+      {
+        "executionId": "5bdadf60-ac0c-4e93-91a3-11a172553f27",
+        "chatSessionId": "sess_df0ec2d3-ddcd-4b6a-94bb-35d4a5ba8ddb",
+        "timestamp": 1785264541441
+      }
+    ],
+    "3. Implement `HAKIApp` entry point with scene body and manager construction": [
+      {
+        "executionId": "5bdadf60-ac0c-4e93-91a3-11a172553f27",
+        "chatSessionId": "sess_df0ec2d3-ddcd-4b6a-94bb-35d4a5ba8ddb",
+        "timestamp": 1785264541483
+      }
+    ],
+    "5.3 Implement `MainWorkspaceView` `NavigationSplitView` skeleton and sidebar": [
+      {
+        "executionId": "c300f01f-7a42-4aaf-87e8-003af1eec55f",
+        "chatSessionId": "sess_28991fcd-7e35-4899-a35c-5af2b779f08a",
+        "timestamp": 1785264560284
+      },
+      {
+        "executionId": "c300f01f-7a42-4aaf-87e8-003af1eec55f",
+        "chatSessionId": "sess_28991fcd-7e35-4899-a35c-5af2b779f08a",
+        "timestamp": 1785264733915
+      }
+    ],
+    "5.4 Implement `MainWorkspaceView` detail column with conversation timeline": [
+      {
+        "executionId": "256e5362-ed08-4b21-a6d0-563e7dbaed68",
+        "chatSessionId": "sess_c1ac1726-7305-4ff3-9ea5-2e7b628b1b41",
+        "timestamp": 1785264744502
+      },
+      {
+        "executionId": "256e5362-ed08-4b21-a6d0-563e7dbaed68",
+        "chatSessionId": "sess_c1ac1726-7305-4ff3-9ea5-2e7b628b1b41",
+        "timestamp": 1785264914895
+      }
+    ],
+    "5.5 Implement floating bottom command bar": [
+      {
+        "executionId": "4abc2024-e9af-4cdc-8991-11fb8b90be9a",
+        "chatSessionId": "sess_278b374e-0ead-465e-b066-ce932aad6a37",
+        "timestamp": 1785264928917
+      },
+      {
+        "executionId": "4abc2024-e9af-4cdc-8991-11fb8b90be9a",
+        "chatSessionId": "sess_278b374e-0ead-465e-b066-ce932aad6a37",
+        "timestamp": 1785265063437
+      }
+    ],
+    "6.1 Implement `JARVISParticleView` `NSViewRepresentable` wrapper and `Coordinator`": [
+      {
+        "executionId": "62a1e7cf-1c7b-46dc-8e48-cd3778858906",
+        "chatSessionId": "sess_c89850fd-fff3-40c0-9745-b5f1d7c0eb6a",
+        "timestamp": 1785265080246
+      },
+      {
+        "executionId": "62a1e7cf-1c7b-46dc-8e48-cd3778858906",
+        "chatSessionId": "sess_c89850fd-fff3-40c0-9745-b5f1d7c0eb6a",
+        "timestamp": 1785265241083
+      }
+    ],
+    "5.6 Apply glassmorphism, color scheme, error banner, and accessibility": [
+      {
+        "executionId": "fdef46cf-afdb-4426-bcaa-1f9c48a150a2",
+        "chatSessionId": "sess_aac433a7-16ee-49d6-bd74-f57982c4e8a9",
+        "timestamp": 1785265256940
+      },
+      {
+        "executionId": "fdef46cf-afdb-4426-bcaa-1f9c48a150a2",
+        "chatSessionId": "sess_aac433a7-16ee-49d6-bd74-f57982c4e8a9",
+        "timestamp": 1785265434364
+      }
+    ],
+    "6.2 Implement `Coordinator.buildScene(in:)` — camera, ring tori, and central sphere": [
+      {
+        "executionId": "29de401f-fad7-4589-9e64-ba2d9e747fa6",
+        "chatSessionId": "sess_aa734157-9535-4ab4-afde-b051e0618bde",
+        "timestamp": 1785265446319
+      },
+      {
+        "executionId": "29de401f-fad7-4589-9e64-ba2d9e747fa6",
+        "chatSessionId": "sess_aa734157-9535-4ab4-afde-b051e0618bde",
+        "timestamp": 1785265612534
+      }
+    ],
+    "8.1 Implement `StatusBarMenuView` SwiftUI view": [
+      {
+        "executionId": "26b70fa7-1275-4b64-91e4-8a04362346b9",
+        "chatSessionId": "sess_4adaf1e7-3a35-4e45-aab3-35c4720e24fe",
+        "timestamp": 1785265626679
+      },
+      {
+        "executionId": "26b70fa7-1275-4b64-91e4-8a04362346b9",
+        "chatSessionId": "sess_4adaf1e7-3a35-4e45-aab3-35c4720e24fe",
+        "timestamp": 1785265759383
+      }
+    ],
+    "8. Implement `StatusBarMenuView`": [
+      {
+        "executionId": "26b70fa7-1275-4b64-91e4-8a04362346b9",
+        "chatSessionId": "sess_4adaf1e7-3a35-4e45-aab3-35c4720e24fe",
+        "timestamp": 1785265759484
+      }
+    ],
+    "6.3 Implement `SCNSceneRendererDelegate.renderer(_:updateAtTime:)` for per-frame reactivity": [
+      {
+        "executionId": "49da2f56-38df-4d74-ac16-7063dd71db8d",
+        "chatSessionId": "sess_c99a539c-2eb6-4943-b35f-927d42f07487",
+        "timestamp": 1785265775066
+      },
+      {
+        "executionId": "49da2f56-38df-4d74-ac16-7063dd71db8d",
+        "chatSessionId": "sess_c99a539c-2eb6-4943-b35f-927d42f07487",
+        "timestamp": 1785265937111
+      }
+    ],
+    "6. Implement `JARVISParticleView`": [
+      {
+        "executionId": "49da2f56-38df-4d74-ac16-7063dd71db8d",
+        "chatSessionId": "sess_c99a539c-2eb6-4943-b35f-927d42f07487",
+        "timestamp": 1785265937143
+      }
+    ],
+    "9.1 Implement `FloatingPanelManager` `NSPanel` setup": [
+      {
+        "executionId": "29883805-da1d-4427-a568-bed022fdb655",
+        "chatSessionId": "sess_225c1904-f030-4e7c-b535-a58451ee88bd",
+        "timestamp": 1785265951886
+      },
+      {
+        "executionId": "29883805-da1d-4427-a568-bed022fdb655",
+        "chatSessionId": "sess_225c1904-f030-4e7c-b535-a58451ee88bd",
+        "timestamp": 1785266844324
+      }
+    ],
+    "10.1 Implement `ScreenOverlayManager` `NSWindow` setup and overlay view": [
+      {
+        "executionId": "f9f9326d-33a9-4f20-a946-86f833efe5f2",
+        "chatSessionId": "sess_5d323bb1-ce75-4265-ab48-0fcfc754fe30",
+        "timestamp": 1785266859304
+      },
+      {
+        "executionId": "f9f9326d-33a9-4f20-a946-86f833efe5f2",
+        "chatSessionId": "sess_5d323bb1-ce75-4265-ab48-0fcfc754fe30",
+        "timestamp": 1785266966837
+      }
+    ],
+    "9.2 Implement `registerGlobalHotkey()` using Carbon `RegisterEventHotKey`": [
+      {
+        "executionId": "97231a21-fdbe-4b10-a82e-ed60c9d53732",
+        "chatSessionId": "sess_96b9ab91-904b-420a-9650-5572dffc75df",
+        "timestamp": 1785266979516
+      },
+      {
+        "executionId": "97231a21-fdbe-4b10-a82e-ed60c9d53732",
+        "chatSessionId": "sess_96b9ab91-904b-420a-9650-5572dffc75df",
+        "timestamp": 1785267189810
+      }
+    ],
+    "10.2 Implement `show()`, `hide()`, and notification observers": [
+      {
+        "executionId": "2b4d0411-4bb6-4167-bfc6-180d8d8c38ee",
+        "chatSessionId": "sess_8809d69c-88d0-4e72-abc9-24e308551af1",
+        "timestamp": 1785267202854
+      },
+      {
+        "executionId": "2b4d0411-4bb6-4167-bfc6-180d8d8c38ee",
+        "chatSessionId": "sess_8809d69c-88d0-4e72-abc9-24e308551af1",
+        "timestamp": 1785267322858
+      }
+    ],
+    "10. Implement `ScreenOverlayManager`": [
+      {
+        "executionId": "2b4d0411-4bb6-4167-bfc6-180d8d8c38ee",
+        "chatSessionId": "sess_8809d69c-88d0-4e72-abc9-24e308551af1",
+        "timestamp": 1785267322902
+      }
+    ],
+    "9.3 Implement `toggle()` show/hide logic": [
+      {
+        "executionId": "8a4ca949-d345-4462-b74f-c42572303405",
+        "chatSessionId": "sess_a0a46806-0e9e-4cfc-b500-35a11e20a2ca",
+        "timestamp": 1785267337907
+      },
+      {
+        "executionId": "8a4ca949-d345-4462-b74f-c42572303405",
+        "chatSessionId": "sess_a0a46806-0e9e-4cfc-b500-35a11e20a2ca",
+        "timestamp": 1785267450293
+      }
+    ],
+    "9. Implement `FloatingPanelManager`": [
+      {
+        "executionId": "8a4ca949-d345-4462-b74f-c42572303405",
+        "chatSessionId": "sess_a0a46806-0e9e-4cfc-b500-35a11e20a2ca",
+        "timestamp": 1785267450346
+      }
+    ],
+    "11.1 Wire `HAKIApp` environment injection and verify all scenes compile end-to-end": [
+      {
+        "executionId": "86733705-4464-49c7-b1f2-4c277fc3a6b1",
+        "chatSessionId": "sess_d0e18cca-f0c3-43bf-a09d-653487c612e2",
+        "timestamp": 1785267461539
+      },
+      {
+        "executionId": "86733705-4464-49c7-b1f2-4c277fc3a6b1",
+        "chatSessionId": "sess_d0e18cca-f0c3-43bf-a09d-653487c612e2",
+        "timestamp": 1785267624818
+      }
+    ],
+    "11.2 Verify `Package.swift` target correctness and run full build": [
+      {
+        "executionId": "b42b83b0-13b5-4d01-8664-432dcd091448",
+        "chatSessionId": "sess_7bb2a122-f359-434f-a6e2-b4ad66383048",
+        "timestamp": 1785267640992
+      },
+      {
+        "executionId": "b42b83b0-13b5-4d01-8664-432dcd091448",
+        "chatSessionId": "sess_7bb2a122-f359-434f-a6e2-b4ad66383048",
+        "timestamp": 1785267726108
+      }
+    ],
+    "11. Final integration and wiring": [
+      {
+        "executionId": "b42b83b0-13b5-4d01-8664-432dcd091448",
+        "chatSessionId": "sess_7bb2a122-f359-434f-a6e2-b4ad66383048",
+        "timestamp": 1785267726268
+      }
+    ]
+  }
+}

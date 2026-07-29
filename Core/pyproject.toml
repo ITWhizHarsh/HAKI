@@ -12,10 +12,42 @@ license = { text = "Proprietary" }
 dependencies = [
     "grpcio==1.64.1",
     "grpcio-tools==1.64.1",
-    "protobuf==5.27.2",
+    "protobuf==5.29.6",
+    "PyYAML==6.0.3",
+    "python-dotenv==1.0.1",
+    # Local-only realtime voice runtime. Keep these pins in sync with requirements.txt.
+    "pipecat-ai==1.4.0",
+    "mlx-lm==0.18.1",
+    "TTS==0.22.0",
+    "silero-vad==5.1.2",
+    "torch==2.5.1",
+    "torchaudio==2.5.1",
+    "soundfile==0.12.1",
+    "numpy==1.26.4",
+    "psutil==6.0.0",
+    "pydantic==2.8.2",
 ]
 
 [project.optional-dependencies]
+# These remain outside the local voice runtime. They support existing text-only
+# orchestration and must not be imported from core.voice.
+non-voice-llm = [
+    "groq==0.31.0",
+    "cerebras-cloud-sdk==1.19.0",
+    "google-genai==2.8.0",
+]
+non-voice-memory = [
+    "sentence-transformers==3.1.1",
+    "chromadb==1.5.0",
+]
+non-voice-ingestion = [
+    "pdfminer.six==20231228",
+    "pypdf==4.3.1",
+]
+non-voice-automation = [
+    "spacy==3.7.6",
+    "apscheduler==3.10.4",
+]
 dev = [
     "hypothesis==6.103.2",
     "pytest==8.2.2",
@@ -26,6 +58,8 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["core*"]
+# The legacy archive is static reference material and must never enter a wheel.
+exclude = ["legacy_pipeline_backup", "legacy_pipeline_backup.*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
